@@ -1,0 +1,22 @@
+{
+  "name": "ai-chat-navigator",
+  "version": "1.0.0",
+  "description": "AI Chat Question Navigator - 为 AI 聊天网站提供问题索引浮窗",
+  "scripts": {
+    "dev": "wxt dev",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "postinstall": "wxt prepare"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@wxt-dev/module-react": "^1.1.5",
+    "typescript": "^5.9.3",
+    "wxt": "^0.20.18"
+  },
+  "dependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  }
+}
