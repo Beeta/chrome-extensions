@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "阅读指示器",
+  "version": "1.0",
+  "description": "阅读时突出显示和导航段落内容",
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "action": {
+    "default_icon": "icon.png",
+    "default_title": "激活阅读指示器"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ]
+}
