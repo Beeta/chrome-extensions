@@ -3,25 +3,20 @@
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "getPageContentForSummarize") {
+        // Simple extraction for now, can be improved with Readability if injected
         const content = document.body.innerText;
         sendResponse({ contentForSummary: content });
-    } else if (request.type === "SIDEBAR_STATUS") {
-        if (request.active) {
-            showFloatingCard();
-        } else {
-            hideFloatingCard();
-        }
-        sendResponse({ status: "ok" });
     }
     return true;
 });
 
-// Listen for text selection — write to session storage so sidebar picks it up reliably
+// Listen for text selection to send to sidebar
 document.addEventListener('mouseup', () => {
     const selectedText = window.getSelection().toString().trim();
     if (selectedText.length > 0) {
-        chrome.storage.session.set({
-            selectedTextForSidebar: { text: selectedText, ts: Date.now() }
+        chrome.runtime.sendMessage({
+            action: "TEXT_SELECTED_FROM_PAGE",
+            text: selectedText
         });
     }
 });
@@ -272,180 +267,4 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', createPreviewBox);
 } else {
     createPreviewBox();
-}
-
-// === Floating Action Card (summarize / ask) ===
-let floatingCard = null;
-
-function createFloatingCard() {
-    if (floatingCard) return;
-
-    floatingCard = document.createElement('div');
-    floatingCard.id = 'g-extension-floating-card';
-
-    floatingCard.innerHTML = `
-        <button class="g-fc-close" title="关闭">×</button>
-        <div class="g-fc-body">
-            <span class="g-fc-title"></span>
-            <button class="g-fc-ask">提问</button>
-            <button class="g-fc-summarize">总结</button>
-        </div>
-    `;
-
-    const style = document.createElement('style');
-    style.id = 'g-extension-floating-card-style';
-    style.textContent = `
-        #g-extension-floating-card {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 14px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.13);
-            z-index: 2147483646;
-            display: flex;
-            align-items: center;
-            padding: 10px 14px 10px 18px;
-            gap: 10px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 14px;
-            min-width: 0;
-            max-width: 480px;
-            animation: g-fc-slide-in 0.25s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        @keyframes g-fc-slide-in {
-            from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        .g-fc-close {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: #1a1a1a;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            line-height: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-        }
-        .g-fc-body {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            overflow: hidden;
-        }
-        .g-fc-title {
-            color: #1a1a1a;
-            font-size: 14px;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 220px;
-        }
-        .g-fc-ask, .g-fc-summarize {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 6px 14px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        .g-fc-ask {
-            background: #fff;
-            color: #1a1a1a;
-        }
-        .g-fc-ask:hover { background: #f5f5f5; }
-        .g-fc-summarize {
-            background: #1a1a1a;
-            color: #fff;
-            border-color: #1a1a1a;
-        }
-        .g-fc-summarize:hover { opacity: 0.85; }
-        @media (prefers-color-scheme: dark) {
-            #g-extension-floating-card {
-                background: #232323;
-                border-color: #3c4043;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-            }
-            .g-fc-title { color: #e8eaed; }
-            .g-fc-ask {
-                background: #2d2d2d;
-                color: #e8eaed;
-                border-color: #5f6368;
-            }
-            .g-fc-ask:hover { background: #3c3c3c; }
-            .g-fc-summarize {
-                background: #e8eaed;
-                color: #1a1a1a;
-                border-color: #e8eaed;
-            }
-        }
-    `;
-
-    document.head.appendChild(style);
-    document.body.appendChild(floatingCard);
-
-    // Update title to current page title
-    const titleEl = floatingCard.querySelector('.g-fc-title');
-    if (titleEl) titleEl.textContent = document.title || location.hostname;
-
-    floatingCard.querySelector('.g-fc-close').addEventListener('click', () => {
-        hideFloatingCard();
-    });
-
-    floatingCard.querySelector('.g-fc-ask').addEventListener('click', async () => {
-        await chrome.runtime.sendMessage({ action: 'openSidePanel' });
-        hideFloatingCard();
-    });
-
-    floatingCard.querySelector('.g-fc-summarize').addEventListener('click', async () => {
-        await chrome.runtime.sendMessage({ action: 'openSidePanel' });
-        // Give sidebar a moment to mount, then trigger summarize
-        setTimeout(() => {
-            chrome.runtime.sendMessage({ action: 'FLOATING_CARD_SUMMARIZE' });
-        }, 400);
-        hideFloatingCard();
-    });
-}
-
-function showFloatingCard() {
-    // Don't show on chrome:// or extension pages
-    if (location.protocol === 'chrome-extension:' || location.href.startsWith('chrome://')) return;
-    if (!floatingCard) createFloatingCard();
-    // Refresh title in case page title changed
-    const titleEl = floatingCard.querySelector('.g-fc-title');
-    if (titleEl) titleEl.textContent = document.title || location.hostname;
-    floatingCard.style.display = 'flex';
-}
-
-function hideFloatingCard() {
-    if (floatingCard) floatingCard.style.display = 'none';
-}
-
-// On page load, ask background if sidebar is currently active
-function checkSidebarStatus() {
-    chrome.runtime.sendMessage({ action: 'IS_SIDEBAR_ACTIVE' }, (response) => {
-        if (chrome.runtime.lastError) return;
-        if (response && response.active) {
-            showFloatingCard();
-        }
-    });
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', checkSidebarStatus);
-} else {
-    checkSidebarStatus();
 }

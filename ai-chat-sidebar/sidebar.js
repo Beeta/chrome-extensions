@@ -175,7 +175,7 @@ async function initialize() {
     sendMessageButton = document.getElementById('sendMessageButton');
     summarizePageButton = document.getElementById('summarizePageButton');
     extractContentButton = document.getElementById('extractContentButton');
-    selectedTextPreview = document.getElementById('selectedTextCard');
+    selectedTextPreview = document.getElementById('selectedTextPreview');
     selectedTextContent = document.getElementById('selectedTextContent');
     clearSelectedTextButton = document.getElementById('clearSelectedTextButton');
     selectedImagePreviewContainer = document.getElementById('selectedImagePreviewContainer');
@@ -358,14 +358,6 @@ async function initialize() {
                 await loadPromptTemplates();
             }
         }
-        if (namespace === 'session') {
-            if (changes.selectedTextForSidebar?.newValue) {
-                const { text } = changes.selectedTextForSidebar.newValue;
-                currentSelectedText = text;
-                if (selectedTextContent) selectedTextContent.textContent = text;
-                if (selectedTextPreview) selectedTextPreview.style.display = 'flex';
-            }
-        }
     });
     chrome.runtime.onMessage.addListener(handleRuntimeMessages);
 }
@@ -543,14 +535,9 @@ function archiveQaPair(aiMessageIndexInCurrentChat) {
 
 function handleRuntimeMessages(request, sender, sendResponse) {
     switch (request.type || request.action) {
-        case 'FLOATING_CARD_SUMMARIZE':
-            handleSummarizeCurrentPage();
-            sendResponse({ status: "ok" });
-            break;
-
         case 'TEXT_SELECTED_FOR_SIDEBAR':
             currentSelectedText = request.text;
-            if (selectedTextContent) selectedTextContent.textContent = currentSelectedText;
+            if (selectedTextContent) selectedTextContent.textContent = currentSelectedText.length > 100 ? currentSelectedText.substring(0, 97) + '...' : currentSelectedText;
             if (selectedTextPreview) selectedTextPreview.style.display = 'flex';
             sendResponse({ status: "Selected text received in sidebar" });
             break;
@@ -752,66 +739,56 @@ async function handleSendMessage() {
     await callApi(finalApiTextMessage, false, imageUrlToSend);
 }
 
-async function handleSummarizeCurrentPage() {
+function handleSummarizeCurrentPage() {
     if (!currentApiKey || !currentModelName || (currentApiType === 'openai' && !currentApiEndpoint)) {
         addMessageToChat({ role: 'model', parts: [{ text: t('errorConfigIncomplete') }], timestamp: Date.now() });
         disableInputs();
         return;
     }
-
     const summaryRequestText = t('summarizePageRequest');
-    const tempMsg = addMessageToChat({ role: 'user', parts: [{ text: summaryRequestText }], timestamp: Date.now(), isTempStatus: true });
+    addMessageToChat({ role: 'user', parts: [{ text: summaryRequestText }], timestamp: Date.now(), isTempStatus: true });
 
-    try {
-        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tabs || tabs.length === 0 || !tabs[0].id) {
-            removeMessageByContentCheck(msg => msg.timestamp === tempMsg.timestamp);
-            addMessageToChat({ role: 'model', parts: [{ text: t('errorActiveTab') }], timestamp: Date.now() });
+    chrome.runtime.sendMessage({ action: "getAndSummarizePage" }, async (response) => {
+        removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text === summaryRequestText);
+
+        if (chrome.runtime.lastError) {
+            addMessageToChat({ role: 'model', parts: [{ text: `${t('summarizeLinkFail')} (CS): ${chrome.runtime.lastError.message}` }], timestamp: Date.now() });
             return;
         }
 
-        const tab = tabs[0];
-        const pageUrl = tab.url || '';
-        const pageTitle = tab.title || '';
+        if (response && typeof response.contentForSummary === 'string') {
+            const pageContent = response.contentForSummary;
+            if (pageContent.trim() === "") {
+                addMessageToChat({ role: 'user', parts: [{ text: t('summarizeRequest') }], timestamp: Date.now() });
+                addMessageToChat({ role: 'model', parts: [{ text: t('summarizePageEmpty') }], timestamp: Date.now() });
+                return;
+            }
+            let prompt = t('prompt_summarize_page');
+            prompt = prompt.replace('{text}', pageContent);
 
-        let pageResponse;
-        try {
-            pageResponse = await chrome.tabs.sendMessage(tab.id, { action: "getPageContentForSummarize" });
-        } catch (e) {
-            removeMessageByContentCheck(msg => msg.timestamp === tempMsg.timestamp);
-            addMessageToChat({ role: 'model', parts: [{ text: `${t('errorCSComm')}${e.message}` }], timestamp: Date.now() });
-            return;
-        }
+            // Create a more informative user message with URL and title
+            const pageUrl = response.pageUrl || '';
+            const pageTitle = response.pageTitle || '';
+            let userMessage = t('summarizeRequest');
 
-        removeMessageByContentCheck(msg => msg.timestamp === tempMsg.timestamp);
+            if (pageTitle) {
+                userMessage += `: "${pageTitle}"`;
+            }
+            if (pageUrl) {
+                userMessage += `\n${pageUrl}`;
+            }
+            userMessage += `\n(${pageContent.length} ${t('characters') || 'characters'})`;
 
-        if (!pageResponse || typeof pageResponse.contentForSummary !== 'string') {
+            addMessageToChat({ role: 'user', parts: [{ text: userMessage }], timestamp: Date.now() });
+            await callApi(prompt, true, null);
+        } else if (response && response.error) {
             addMessageToChat({ role: 'user', parts: [{ text: t('summarizeRequest') }], timestamp: Date.now() });
-            addMessageToChat({ role: 'model', parts: [{ text: t('errorContentInvalid') }], timestamp: Date.now() });
-            return;
-        }
-
-        const pageContent = pageResponse.contentForSummary;
-        if (pageContent.trim() === '') {
+            addMessageToChat({ role: 'model', parts: [{ text: `${t('summarizeLinkFail')}: ${response.error}` }], timestamp: Date.now() });
+        } else {
             addMessageToChat({ role: 'user', parts: [{ text: t('summarizeRequest') }], timestamp: Date.now() });
-            addMessageToChat({ role: 'model', parts: [{ text: t('summarizePageEmpty') }], timestamp: Date.now() });
-            return;
+            addMessageToChat({ role: 'model', parts: [{ text: t('summarizeErrorUnknown') }], timestamp: Date.now() });
         }
-
-        let prompt = t('prompt_summarize_page').replace('{text}', pageContent);
-
-        let userMessage = t('summarizeRequest');
-        if (pageTitle) userMessage += `: "${pageTitle}"`;
-        if (pageUrl) userMessage += `\n${pageUrl}`;
-        userMessage += `\n(${pageContent.length} ${t('characters') || 'characters'})`;
-
-        addMessageToChat({ role: 'user', parts: [{ text: userMessage }], timestamp: Date.now() });
-        await callApi(prompt, true, null);
-
-    } catch (err) {
-        removeMessageByContentCheck(msg => msg.timestamp === tempMsg.timestamp);
-        addMessageToChat({ role: 'model', parts: [{ text: `${t('summarizeLinkFail')}: ${err.message}` }], timestamp: Date.now() });
-    }
+    });
 }
 
 function showAttachedPageCard(title, url, favIconUrl, tabId) {
@@ -1156,12 +1133,18 @@ function updateStreamingMessage(text) {
 function finalizeStreamingMessage() {
     if (!streamingMessageElement) return;
 
-    // updateStreamingMessage already rendered the correct HTML with marked.parse —
-    // reading contentWrapper.textContent here would strip all HTML tags and corrupt the output.
-    // Re-render the full chat so the footer (copy/archive buttons) is added to the final message.
+    const contentWrapper = streamingMessageElement.querySelector('.message-content-wrapper');
+    if (contentWrapper) {
+        const text = contentWrapper.textContent;
+        try {
+            contentWrapper.innerHTML = marked.parse(text);
+        } catch (e) {
+            console.error("Error parsing final markdown:", e);
+            contentWrapper.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+        }
+    }
     streamingMessageElement = null;
     isUserScrolling = false; // Reset for next stream
-    renderCurrentChat();
 }
 
 function renderCurrentChat() {
@@ -1385,14 +1368,6 @@ function saveArchivedChats() {
 }
 
 document.addEventListener('DOMContentLoaded', initialize);
-
-// Notify background that the sidebar is now active
-chrome.runtime.sendMessage({ action: "SIDEBAR_ACTIVE" }, () => { if (chrome.runtime.lastError) {} });
-
-// Notify background when the sidebar is closed / navigated away
-window.addEventListener('unload', () => {
-    chrome.runtime.sendMessage({ action: "SIDEBAR_INACTIVE" }, () => { if (chrome.runtime.lastError) {} });
-});
 
 document.addEventListener('click', function (event) {
     if (event.target.tagName === 'A' && event.target.href && event.target.href.startsWith('http')) {

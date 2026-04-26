@@ -2,9 +2,6 @@
 let geminiApiKey = null;
 let currentLanguage = 'zh';
 
-// Track which windows have an active sidebar
-const activeSidebarWindows = new Set();
-
 const translations = {
   zh: {
     analyzeImage: "用 Gemini 分析图片",
@@ -193,11 +190,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     });
     return true;
-  } else if (request.action === "FLOATING_CARD_SUMMARIZE") {
-    chrome.runtime.sendMessage({ type: "FLOATING_CARD_SUMMARIZE" });
-    sendResponse({ status: "ok" });
-    return false;
-
+  } else if (request.action === "TEXT_SELECTED_FROM_PAGE") {
+    chrome.runtime.sendMessage({ type: "TEXT_SELECTED_FOR_SIDEBAR", text: request.text });
+    sendResponse({ status: "Text selected event forwarded" });
+    return true;
   } else if (request.action === "summarizeLinkTarget") {
     const linkUrl = request.url;
     const linkText = request.linkText || linkUrl;
@@ -263,38 +259,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     sendResponse({ status: "Link content processed." });
     return true;
-  }
-
-  } else if (request.action === "SIDEBAR_ACTIVE") {
-    // Sidebar registers itself as active; notify the current tab's content_script
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs && tabs[0]) {
-        activeSidebarWindows.add(tabs[0].windowId);
-        chrome.tabs.sendMessage(tabs[0].id, { type: "SIDEBAR_STATUS", active: true }, () => {
-          if (chrome.runtime.lastError) { /* content_script may not be ready yet */ }
-        });
-      }
-    });
-    sendResponse({ status: "ok" });
-    return false;
-
-  } else if (request.action === "SIDEBAR_INACTIVE") {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs && tabs[0]) {
-        activeSidebarWindows.delete(tabs[0].windowId);
-        chrome.tabs.sendMessage(tabs[0].id, { type: "SIDEBAR_STATUS", active: false }, () => {
-          if (chrome.runtime.lastError) { /* ignore */ }
-        });
-      }
-    });
-    sendResponse({ status: "ok" });
-    return false;
-
-  } else if (request.action === "IS_SIDEBAR_ACTIVE") {
-    // content_script asks on page load whether the sidebar is open
-    const windowId = sender.tab?.windowId;
-    sendResponse({ active: windowId != null && activeSidebarWindows.has(windowId) });
-    return false;
   }
 
   return false;
