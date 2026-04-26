@@ -453,36 +453,12 @@ body {
 /* ========================================
    Preview
    ======================================== */
-#selectedTextPreview {
-  font-size: 0.9em;
-  background: var(--preview-bg-color);
-  color: var(--preview-text-color);
-  padding: 10px 14px;
-  border: 1px solid var(--preview-border-color);
-  border-radius: var(--border-radius-sm);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 0 16px 8px;
-}
-
-#selectedTextContent {
-  flex-grow: 1;
-  margin-right: 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#clearSelectedTextButton {
-  background: none;
-  border: 1px solid var(--preview-border-color);
-  color: var(--preview-text-color);
-  font-size: 0.9em;
-  padding: 4px 10px;
-  cursor: pointer;
-  border-radius: 6px;
-  font-weight: 500;
+.selected-text-icon {
+  font-size: 0.95em;
+  color: var(--light-text-color);
+  flex-shrink: 0;
+  line-height: 1;
+  opacity: 0.6;
 }
 
 /* ========================================
