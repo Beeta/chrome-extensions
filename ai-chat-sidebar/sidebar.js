@@ -1133,18 +1133,10 @@ function updateStreamingMessage(text) {
 function finalizeStreamingMessage(rawText) {
     if (!streamingMessageElement) return;
 
-    const contentWrapper = streamingMessageElement.querySelector('.message-content-wrapper');
-    if (contentWrapper) {
-        const text = rawText || contentWrapper.textContent;
-        try {
-            contentWrapper.innerHTML = marked.parse(text);
-        } catch (e) {
-            console.error("Error parsing final markdown:", e);
-            contentWrapper.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
-        }
-    }
     streamingMessageElement = null;
-    isUserScrolling = false; // Reset for next stream
+    isUserScrolling = false;
+    // Re-render the full chat so action buttons are injected with correct text content
+    renderCurrentChat();
 }
 
 function renderCurrentChat() {
