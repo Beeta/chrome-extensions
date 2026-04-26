@@ -1060,7 +1060,7 @@ async function callApi(userMessageContent, isSummary = false, imageUrl = null) {
                 } catch (e) { /* Ignore if buffer is not valid JSON */ }
             }
             // Apply markdown formatting to the final message
-            finalizeStreamingMessage();
+            finalizeStreamingMessage(aiResponseText);
             saveCurrentChat();
         } else {
             addMessageToChat({ role: 'model', parts: [{ text: t('streamEmpty') }], timestamp: Date.now() });
@@ -1130,12 +1130,12 @@ function updateStreamingMessage(text) {
 }
 
 // Apply markdown to the final streamed message
-function finalizeStreamingMessage() {
+function finalizeStreamingMessage(rawText) {
     if (!streamingMessageElement) return;
 
     const contentWrapper = streamingMessageElement.querySelector('.message-content-wrapper');
     if (contentWrapper) {
-        const text = contentWrapper.textContent;
+        const text = rawText || contentWrapper.textContent;
         try {
             contentWrapper.innerHTML = marked.parse(text);
         } catch (e) {
