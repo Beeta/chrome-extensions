@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title data-i18n="optionsTitle">智能侧边栏API设置</title>
+  <meta charset="utf-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --page-bg: #f3f3f3;
+      --card-bg: #ffffff;
+      --primary-text-color: #1a1a1a;
+      --secondary-text-color: #5f6368;
+      --light-text-color: #9aa0a6;
+      --border-color: #e5e5e5;
+      --hover-bg-color: #ebebeb;
+      --danger-color: #ea4335;
+      --success-color: #34a853;
+      --link-color: #1a73e8;
+      --input-focus-border: #1a73e8;
+      --input-focus-shadow: 0 0 0 2px rgba(26, 115, 232, 0.12);
+      --border-radius: 12px;
+      --border-radius-sm: 8px;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page-bg: #141414;
+        --card-bg: #232323;
+        --primary-text-color: #e8eaed;
+        --secondary-text-color: #9aa0a6;
+        --light-text-color: #6b7280;
+        --border-color: #333333;
+        --hover-bg-color: #2a2a2a;
+        --input-focus-border: #8ab4f8;
+        --input-focus-shadow: 0 0 0 2px rgba(138, 180, 248, 0.15);
+      }
+    }
+
+    body {
+      font-family: var(--font-family);
+      font-size: 14px;
+      background: var(--page-bg);
+      color: var(--primary-text-color);
+      padding: 32px 20px 48px;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    h1 {
+      font-size: 1.4em;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: var(--primary-text-color);
+      text-align: center;
+    }
+
+    h2 {
+      font-size: 0.95em;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--secondary-text-color);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .general-settings,
+    .config-form,
+    .config-list {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      max-width: 760px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+      font-size: 0.88em;
+    }
+
+    input[type="text"],
+    input[type="url"],
+    input[type="password"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      font-size: 0.95em;
+      font-family: inherit;
+      background: var(--page-bg);
+      color: var(--primary-text-color);
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--input-focus-border);
+      box-shadow: var(--input-focus-shadow);
+    }
+
+    button {
+      padding: 8px 18px;
+      border: none;
+      border-radius: var(--border-radius-sm);
+      font-size: 0.88em;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--primary-text-color);
+      color: var(--card-bg);
+      margin-right: 8px;
+      margin-bottom: 8px;
+      font-family: inherit;
+    }
+
+    button:hover {
+      opacity: 0.85;
+    }
+
+    button:active {
+      opacity: 0.7;
+    }
+
+    button.delete-btn {
+      background: var(--danger-color);
+      color: #fff;
+    }
+
+    button.edit-btn {
+      background: var(--hover-bg-color);
+      color: var(--primary-text-color);
+      border: 1px solid var(--border-color);
+    }
+
+    button.set-active-btn {
+      background: var(--success-color);
+      color: #fff;
+    }
+
+    button#testConfigButton {
+      background: var(--hover-bg-color);
+      color: var(--primary-text-color);
+      border: 1px solid var(--border-color);
+    }
+
+    #status {
+      margin-top: 12px;
+      padding: 10px 16px;
+      font-size: 0.88em;
+      font-weight: 500;
+      border-radius: var(--border-radius-sm);
+      max-width: 760px;
+      margin-left: auto;
+      margin-right: auto;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: var(--secondary-text-color);
+    }
+
+    .config-item {
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      background: var(--page-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .config-item:hover {
+      background: var(--hover-bg-color);
+    }
+
+    .config-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .config-details {
+      flex-grow: 1;
+      min-width: 0;
+    }
+
+    .config-details h3 {
+      font-size: 0.95em;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--primary-text-color);
+    }
+
+    .config-details p {
+      color: var(--light-text-color);
+      font-size: 0.82em;
+      margin: 2px 0;
+    }
+
+    .config-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .config-actions button {
+      margin: 0;
+      padding: 6px 12px;
+      font-size: 0.82em;
+    }
+
+    .is-active {
+      border-color: var(--success-color);
+      background: var(--card-bg);
+    }
+
+    .is-active .config-details h3::after {
+      content: ' ✓';
+      color: var(--success-color);
+      font-weight: 600;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 600px) {
+      .config-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .config-actions {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1 data-i18n="optionsTitle">API 配置管理</h1>
+
+  <div class="general-settings">
+    <h2 data-i18n="generalSettingsTitle">通用设置</h2>
+    <div class="form-group">
+      <label for="languageSelect" data-i18n="languageLabel">界面语言 / Interface Language:</label>
+      <select id="languageSelect">
+        <option value="zh">中文 (Chinese)</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+    <button id="saveGeneralSettingsButton" data-i18n="saveGeneralSettings">保存通用设置</button>
+  </div>
+
+  <div class="config-form" id="configFormContainer">
+    <h2 data-i18n="addEditConfigTitle">添加/编辑配置</h2>
+    <input type="hidden" id="configId">
+    <div class="form-group">
+      <label for="configName" data-i18n="configNameLabel">配置名称:</label>
+      <input type="text" id="configName" placeholder="例如：我的 Gemini 主力">
+    </div>
+    <div class="form-group">
+      <label for="apiKey" data-i18n="apiKeyLabel">API 密钥:</label>
+      <input type="password" id="apiKey" placeholder="粘贴您的 API 密钥">
+    </div>
+    <div class="form-group">
+      <label for="apiType" data-i18n="apiTypeLabel">API 类型:</label>
+      <select id="apiType">
+        <option value="gemini">Google Gemini</option>
+        <option value="openai">OpenAI 兼容 API</option>
+      </select>
+    </div>
+    <div class="form-group hidden" id="apiEndpointGroup">
+      <label for="apiEndpoint" data-i18n="apiEndpointLabel">API Endpoint URL:</label>
+      <input type="url" id="apiEndpoint" placeholder="例如: https://api.openai.com/v1/chat/completions">
+    </div>
+    <div class="form-group">
+      <label for="modelName" data-i18n="modelNameLabel">模型名称:</label>
+      <input type="text" id="modelName" placeholder="例如: gemini-1.5-flash-latest 或 gpt-4o">
+    </div>
+    
+    <button id="saveConfigButton" data-i18n="saveConfig">保存配置</button>
+    <button type="button" id="testConfigButton" data-i18n="testConfig">测试连接</button>
+    <button type="button" id="clearFormButton" data-i18n="clearForm">清空表单</button>
+    <button type="button" id="cancelEditButton" class="hidden" data-i18n="cancelEdit">取消编辑</button>
+  </div>
+
+  <div class="config-list">
+    <h2 data-i18n="savedConfigsTitle">已保存的配置</h2>
+    <div id="configurationsList">
+      <p data-i18n="noConfigs">暂无配置。请添加一个新配置。</p>
+    </div>
+  </div>
+  
+  <p id="status"></p>
+
+  <script src="options.js"></script>
+</body>
+</html>
