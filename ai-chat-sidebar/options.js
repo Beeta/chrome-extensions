@@ -1,4 +1,5 @@
 // options.js
+(function() {
 document.addEventListener('DOMContentLoaded', function() {
   const configIdInput = document.getElementById('configId');
   const configNameInput = document.getElementById('configName');
@@ -6,15 +7,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const apiTypeSelect = document.getElementById('apiType');
   const apiEndpointInput = document.getElementById('apiEndpoint');
   const modelNameInput = document.getElementById('modelName');
-  
+
   const saveConfigButton = document.getElementById('saveConfigButton');
   const testConfigButton = document.getElementById('testConfigButton'); // New Button
   const clearFormButton = document.getElementById('clearFormButton');
   const cancelEditButton = document.getElementById('cancelEditButton');
-  
+
   const configurationsListDiv = document.getElementById('configurationsList');
   const statusDiv = document.getElementById('status');
-  
+
   const apiEndpointGroup = document.getElementById('apiEndpointGroup');
 
   // Language elements
@@ -44,19 +45,19 @@ document.addEventListener('DOMContentLoaded', function() {
       cancelEdit: "取消编辑",
       savedConfigsTitle: "已保存的配置",
       noConfigs: "暂无配置。请使用上面的表单添加一个新配置。",
-      
+
       // Placeholders & Values
       configNamePlaceholder: "例如：我的 Gemini 主力 (留空将自动生成)",
       apiKeyPlaceholder: "粘贴您的 API 密钥",
       apiEndpointPlaceholder: "例如: https://api.openai.com/v1/chat/completions",
       modelNamePlaceholder: "例如: gemini-1.5-flash-latest 或 gpt-4o",
-      
+
       // Status Messages
       statusSaved: "配置保存成功！",
       statusError: "错误: 保存配置失败。",
       generalSettingsSaved: "通用设置已保存，请重新打开侧边栏以生效。",
       generalSettingsError: "保存失败: ",
-      valConfigName: "API密钥和模型名称不能为空。", 
+      valConfigName: "API密钥和模型名称不能为空。",
       valApiEndpoint: "OpenAI 兼容 API 需要填写 Endpoint URL。",
       confirmDelete: '确定要删除配置 "{name}" 吗？',
       testing: "正在测试连接...", // New translation
@@ -89,13 +90,13 @@ document.addEventListener('DOMContentLoaded', function() {
       cancelEdit: "Cancel Edit",
       savedConfigsTitle: "Saved Configurations",
       noConfigs: "No configurations. Please add one above.",
-      
+
       // Placeholders & Values
       configNamePlaceholder: "E.g., My Main Gemini (Leave empty to auto-generate)",
       apiKeyPlaceholder: "Paste your API Key here",
       apiEndpointPlaceholder: "E.g., https://api.openai.com/v1/chat/completions",
       modelNamePlaceholder: "E.g., gemini-1.5-flash-latest or gpt-4o",
-      
+
       // Status Messages
       statusSaved: "Configuration saved successfully!",
       statusError: "Error: Failed to save configuration.",
@@ -123,8 +124,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function updateInterfaceLanguage() {
-    // Update static text
-    document.querySelectorAll('[data-i18n]').forEach(el => {
+    // Only update elements within the settings panel to avoid conflicts with other modules
+    const settingsPanel = document.getElementById('panel-settings');
+    const scope = settingsPanel || document;
+    scope.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
       if (translations[currentLanguage][key]) {
         el.textContent = translations[currentLanguage][key];
@@ -139,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (modelNameInput) modelNameInput.placeholder = t('modelNamePlaceholder');
 
     // Update dynamic button text based on state (Save vs Update)
-    if (configIdInput.value) {
+    if (configIdInput && configIdInput.value) {
         saveConfigButton.textContent = t('updateConfig');
     } else {
         saveConfigButton.textContent = t('saveConfig');
@@ -168,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const result = await chrome.storage.sync.get(['apiConfigurations', 'activeConfigurationId', 'interfaceLanguage']);
     configurations = result.apiConfigurations || [];
     activeConfigurationId = result.activeConfigurationId || null;
-    
+
     // Load language setting
     if (result.interfaceLanguage) {
       languageSelect.value = result.interfaceLanguage;
@@ -183,9 +186,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function saveConfigurations() {
     try {
-      await chrome.storage.sync.set({ 
+      await chrome.storage.sync.set({
         apiConfigurations: configurations,
-        activeConfigurationId: activeConfigurationId 
+        activeConfigurationId: activeConfigurationId
       });
       showStatus(t('statusSaved'), 'green');
     } catch (e) {
@@ -198,8 +201,8 @@ document.addEventListener('DOMContentLoaded', function() {
   saveGeneralSettingsButton.addEventListener('click', async () => {
     try {
       currentLanguage = languageSelect.value; // Update local state immediately
-      await chrome.storage.sync.set({ 
-        interfaceLanguage: currentLanguage 
+      await chrome.storage.sync.set({
+        interfaceLanguage: currentLanguage
       });
       updateInterfaceLanguage(); // Apply changes to UI
       showStatus(t('generalSettingsSaved'), 'green');
@@ -212,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
     statusDiv.textContent = text;
     statusDiv.style.color = color;
     // Clear status after a few seconds, unless it's a "Testing..." message which might need to persist until done
-    if (!text.includes("...")) { 
+    if (!text.includes("...")) {
         setTimeout(() => { statusDiv.textContent = ''; }, 4000);
     }
   }
@@ -276,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
       actionsDiv.appendChild(deleteButton);
-      
+
       itemDiv.appendChild(actionsDiv);
       configurationsListDiv.appendChild(itemDiv);
     });
@@ -290,9 +293,9 @@ document.addEventListener('DOMContentLoaded', function() {
     apiEndpointInput.value = config.apiEndpoint || '';
     modelNameInput.value = config.modelName;
     toggleApiEndpointField();
-    
+
     saveConfigButton.textContent = t('updateConfig');
-    
+
     cancelEditButton.classList.remove('hidden');
     document.getElementById('configFormContainer').scrollIntoView({ behavior: 'smooth' });
   }
@@ -305,9 +308,9 @@ document.addEventListener('DOMContentLoaded', function() {
     apiEndpointInput.value = '';
     modelNameInput.value = '';
     toggleApiEndpointField();
-    
+
     saveConfigButton.textContent = t('saveConfig');
-    
+
     cancelEditButton.classList.add('hidden');
     configNameInput.focus();
   }
@@ -413,14 +416,14 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       configurations.push(newConfig); // Add new
     }
-    
+
     if (configurations.length === 1 || newConfig.id === activeConfigurationId || !activeConfigurationId) {
         activeConfigurationId = newConfig.id;
     }
 
     await saveConfigurations();
     clearForm();
-    loadConfigurations(); 
+    loadConfigurations();
   });
 
   function escapeHtml(unsafe) {
@@ -435,5 +438,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Initial load
   loadConfigurations();
-  toggleApiEndpointField(); 
+  toggleApiEndpointField();
 });
+})();

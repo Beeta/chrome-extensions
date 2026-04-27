@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title data-i18n="optionsTitle">智能侧边栏API设置</title>
+  <title>智能侧边栏管理</title>
   <meta charset="utf-8">
   <style>
     * {
@@ -26,6 +26,24 @@
       --border-radius: 12px;
       --border-radius-sm: 8px;
       --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      /* archive css vars */
+      --sidebar-bg: #ffffff;
+      --sidebar-border: #e0e0e0;
+      --main-bg: #f8f9fa;
+      --item-hover: #f5f5f5;
+      --item-active: #ebebeb;
+      --text-primary: #1a1a1a;
+      --text-secondary: #5f6368;
+      --text-light: #9aa0a6;
+      --user-msg-bg: #f1f3f4;
+      --user-msg-text: #1a1a1a;
+      --ai-msg-bg: #ffffff;
+      --ai-msg-text: #1a1a1a;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      /* prompts css vars */
+      --warning-color: #f9ab00;
+      --code-bg: #f5f5f5;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -39,17 +57,112 @@
         --hover-bg-color: #2a2a2a;
         --input-focus-border: #8ab4f8;
         --input-focus-shadow: 0 0 0 2px rgba(138, 180, 248, 0.15);
+        /* archive dark */
+        --sidebar-bg: #232323;
+        --sidebar-border: #3c4043;
+        --main-bg: #1a1a1a;
+        --item-hover: #2d2d2d;
+        --item-active: #3c3c3c;
+        --text-primary: #e8eaed;
+        --text-secondary: #9aa0a6;
+        --text-light: #6b7280;
+        --user-msg-bg: #2d2d2d;
+        --user-msg-text: #e8eaed;
+        --ai-msg-bg: #232323;
+        --ai-msg-text: #e8eaed;
+        /* prompts dark */
+        --code-bg: #2d2d2d;
       }
     }
 
-    body {
+    /* ===== Tab Layout ===== */
+    html, body {
+      height: 100%;
       font-family: var(--font-family);
       font-size: 14px;
       background: var(--page-bg);
       color: var(--primary-text-color);
-      padding: 32px 20px 48px;
-      min-height: 100vh;
       line-height: 1.6;
+    }
+
+    .tab-layout {
+      display: flex;
+      height: 100vh;
+    }
+
+    .tab-nav {
+      width: 160px;
+      background: var(--card-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0;
+      flex-shrink: 0;
+    }
+
+    .tab-nav-title {
+      font-size: 0.75em;
+      font-weight: 600;
+      color: var(--light-text-color);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0 20px 12px;
+    }
+
+    .tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9em;
+      color: var(--secondary-text-color);
+      text-align: left;
+      border-radius: 0;
+      margin: 0;
+      margin-bottom: 0;
+      font-family: var(--font-family);
+      border-right: 2px solid transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .tab-btn:hover {
+      background: var(--hover-bg-color);
+      color: var(--primary-text-color);
+    }
+
+    .tab-btn.active {
+      background: var(--hover-bg-color);
+      color: var(--primary-text-color);
+      font-weight: 600;
+      border-right: 2px solid var(--primary-text-color);
+    }
+
+    .tab-btn .tab-icon {
+      font-size: 1.1em;
+    }
+
+    .tab-content {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .tab-panel {
+      display: none;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* ===== Settings Panel ===== */
+    #panel-settings {
+      padding: 32px 20px 48px;
     }
 
     h1 {
@@ -250,65 +363,698 @@
         width: 100%;
       }
     }
+
+    /* ===== Archive Panel ===== */
+    #panel-archive {
+      display: none;
+      height: 100%;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #panel-archive.active {
+      display: flex;
+    }
+
+    .archive-panel-inner {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .archive-list-section {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .archive-list-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--sidebar-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card-bg);
+    }
+
+    .archive-list-header h2 {
+      font-size: 1.1em;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    #chat-list {
+      padding: 10px;
+    }
+
+    .chat-item {
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .chat-item:hover {
+      background-color: var(--item-hover);
+    }
+
+    .chat-item.active {
+      background-color: var(--item-active);
+      border-color: var(--sidebar-border);
+    }
+
+    .chat-item-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-primary);
+    }
+
+    .chat-item-date {
+      font-size: 0.75rem;
+      color: var(--text-light);
+    }
+
+    .archive-detail-section {
+      flex: 1;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #chat-detail-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      padding-bottom: 10px;
+      display: none;
+      background: var(--main-bg);
+    }
+
+    .archive-list-footer {
+      padding: 16px;
+      border-top: 1px solid var(--sidebar-border);
+      background: var(--card-bg);
+    }
+
+    .btn-danger {
+      width: 100%;
+      padding: 10px;
+      background: #ea4335;
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .btn-danger:hover {
+      opacity: 0.85;
+    }
+
+    .chat-header {
+      position: sticky;
+      top: 0;
+      background: var(--main-bg);
+      padding: 16px 0;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--sidebar-border);
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-title-large {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .back-to-list-btn {
+      background: none;
+      border: 1px solid var(--border-color);
+      color: var(--secondary-text-color);
+      font-size: 0.85em;
+      padding: 6px 14px;
+      margin: 0 0 8px 0;
+    }
+
+    .back-to-list-btn:hover {
+      background: var(--hover-bg-color);
+    }
+
+    .message {
+      margin-bottom: 24px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .message-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px;
+      border-radius: 4px;
+      opacity: 0.6;
+      margin: 0;
+    }
+
+    .copy-btn:hover {
+      opacity: 1;
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .message-content {
+      padding: 16px 24px;
+      border-radius: var(--radius-lg);
+      line-height: 1.6;
+      font-size: 1rem;
+      white-space: normal;
+      word-wrap: break-word;
+    }
+
+    .markdown-body p { margin-bottom: 1em; }
+    .markdown-body p:last-child { margin-bottom: 0; }
+    .markdown-body pre {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 12px;
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+      font-size: 0.9em;
+      margin-bottom: 1em;
+    }
+    .markdown-body code {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+      font-size: 0.9em;
+    }
+    .markdown-body pre code { background: transparent; padding: 0; }
+    .markdown-body ul, .markdown-body ol { margin-bottom: 1em; padding-left: 20px; }
+    .markdown-body blockquote {
+      margin: 0 0 1em 0;
+      padding-left: 1em;
+      border-left: 4px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+    .markdown-body .quote-card {
+      margin: 0 0 8px 0;
+      padding: 0;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+    .markdown-body .quote-card-content {
+      padding: 8px 10px;
+      font-size: 0.85em;
+      line-height: 1.5;
+      color: rgba(0, 0, 0, 0.5);
+      max-height: 80px;
+      overflow-y: auto;
+      word-break: break-word;
+      border-left: 3px solid rgba(0, 0, 0, 0.15);
+    }
+    @media (prefers-color-scheme: dark) {
+      .markdown-body .quote-card { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.1); }
+      .markdown-body .quote-card-content { color: rgba(255, 255, 255, 0.6); border-left-color: rgba(255, 255, 255, 0.25); }
+    }
+
+    .user-message .message-content {
+      background: var(--user-msg-bg);
+      color: var(--user-msg-text);
+      border-bottom-right-radius: 4px;
+    }
+    .ai-message .message-content {
+      background: var(--ai-msg-bg);
+      color: var(--ai-msg-text);
+      border: 1px solid var(--border-color);
+      border-bottom-left-radius: 4px;
+    }
+
+    .empty-state {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-light);
+    }
+    .empty-state-icon { font-size: 4rem; margin-bottom: 16px; opacity: 0.5; }
+
+    .action-btn {
+      background: transparent;
+      border: 1px solid var(--sidebar-border);
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+    .action-btn:hover { background: var(--item-hover); color: var(--text-primary); }
+
+    .archive-input-container {
+      padding: 20px;
+      border-top: 1px solid var(--border-color);
+      background: var(--main-bg);
+      display: none;
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      background: var(--ai-msg-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 10px 16px;
+    }
+    .input-wrapper:focus-within {
+      border-color: var(--primary-text-color);
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      .input-wrapper:focus-within { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1); }
+    }
+
+    #archive-chat-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: none;
+      max-height: 120px;
+      padding: 4px 0;
+      outline: none;
+      line-height: 1.5;
+    }
+
+    .send-btn {
+      background: var(--primary-text-color);
+      color: var(--card-bg);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0;
+    }
+    .send-btn:hover { opacity: 0.85; }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ===== Prompts Panel ===== */
+    #panel-prompts {
+      padding: 40px 20px;
+    }
+
+    .prompts-container {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .prompts-container h1 {
+      text-align: center;
+      font-size: 2em;
+      font-weight: 700;
+      margin-bottom: 30px;
+    }
+
+    .prompts-container h2 {
+      font-size: 1.4em;
+      font-weight: 600;
+      margin-top: 40px;
+      margin-bottom: 20px;
+      text-transform: none;
+      letter-spacing: 0;
+      border-left: 4px solid var(--primary-text-color);
+      padding-left: 15px;
+    }
+
+    .prompt-list {
+      margin-bottom: 40px;
+    }
+
+    .prompt-item {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .prompt-item:hover { border-color: #b0b0b0; }
+
+    .prompt-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .prompt-item-name {
+      font-weight: 700;
+      font-size: 1.1em;
+      color: var(--primary-text-color);
+    }
+
+    .prompt-item-content {
+      white-space: pre-wrap;
+      background: var(--code-bg);
+      padding: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+      font-size: 0.9em;
+      margin-bottom: 16px;
+      max-height: 200px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+
+    .prompt-item-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .prompt-item-actions button {
+      padding: 8px 18px;
+      font-size: 0.9em;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .edit-button {
+      background: var(--warning-color);
+      color: #ffffff;
+    }
+
+    .delete-button {
+      background: var(--danger-color);
+      color: white;
+    }
+
+    .edit-button:hover, .delete-button:hover { opacity: 0.85; }
+
+    .preset-tag {
+      font-size: 0.72em;
+      background: var(--success-color);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 20px;
+      margin-left: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+
+    .form-container:hover { border-color: #b0b0b0; }
+
+    .form-container label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--secondary-text-color);
+      font-size: 0.95em;
+    }
+
+    .form-container label code {
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      color: var(--primary-text-color);
+    }
+
+    .form-container input[type="text"],
+    .form-container textarea {
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      font-size: 0.95em;
+      font-family: inherit;
+      background: var(--card-bg);
+      color: var(--primary-text-color);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .form-container input[type="text"],
+      .form-container textarea { background: #2d2d2d; }
+    }
+
+    .form-container textarea {
+      resize: vertical;
+      min-height: 100px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+      line-height: 1.6;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    .form-actions button {
+      padding: 10px 24px;
+      font-size: 0.95em;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    #savePromptButton {
+      background: var(--primary-text-color);
+      color: var(--card-bg);
+    }
+
+    #clearFormButton,
+    #promptClearFormButton {
+      background: #5f6368;
+      color: white;
+    }
+
+    .usage-note {
+      margin-top: 30px;
+      padding: 16px 20px;
+      font-size: 0.9em;
+      color: var(--secondary-text-color);
+      background: var(--card-bg);
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--primary-text-color);
+    }
+
+    .usage-note code {
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      color: var(--primary-text-color);
+    }
+
+    .usage-note ul {
+      margin-top: 10px;
+      padding-left: 20px;
+      line-height: 1.8;
+    }
   </style>
 </head>
 <body>
-  <h1 data-i18n="optionsTitle">API 配置管理</h1>
+  <div class="tab-layout">
+    <!-- 左侧 Tab 导航 -->
+    <nav class="tab-nav">
+      <div class="tab-nav-title">管理</div>
+      <button class="tab-btn" data-tab="settings">
+        <span class="tab-icon">⚙️</span> 设置
+      </button>
+      <button class="tab-btn" data-tab="archive">
+        <span class="tab-icon">💬</span> 存档
+      </button>
+      <button class="tab-btn" data-tab="prompts">
+        <span class="tab-icon">⚡</span> Prompt
+      </button>
+    </nav>
 
-  <div class="general-settings">
-    <h2 data-i18n="generalSettingsTitle">通用设置</h2>
-    <div class="form-group">
-      <label for="languageSelect" data-i18n="languageLabel">界面语言 / Interface Language:</label>
-      <select id="languageSelect">
-        <option value="zh">中文 (Chinese)</option>
-        <option value="en">English</option>
-      </select>
-    </div>
-    <button id="saveGeneralSettingsButton" data-i18n="saveGeneralSettings">保存通用设置</button>
-  </div>
+    <!-- 右侧内容区 -->
+    <div class="tab-content">
 
-  <div class="config-form" id="configFormContainer">
-    <h2 data-i18n="addEditConfigTitle">添加/编辑配置</h2>
-    <input type="hidden" id="configId">
-    <div class="form-group">
-      <label for="configName" data-i18n="configNameLabel">配置名称:</label>
-      <input type="text" id="configName" placeholder="例如：我的 Gemini 主力">
-    </div>
-    <div class="form-group">
-      <label for="apiKey" data-i18n="apiKeyLabel">API 密钥:</label>
-      <input type="password" id="apiKey" placeholder="粘贴您的 API 密钥">
-    </div>
-    <div class="form-group">
-      <label for="apiType" data-i18n="apiTypeLabel">API 类型:</label>
-      <select id="apiType">
-        <option value="gemini">Google Gemini</option>
-        <option value="openai">OpenAI 兼容 API</option>
-      </select>
-    </div>
-    <div class="form-group hidden" id="apiEndpointGroup">
-      <label for="apiEndpoint" data-i18n="apiEndpointLabel">API Endpoint URL:</label>
-      <input type="url" id="apiEndpoint" placeholder="例如: https://api.openai.com/v1/chat/completions">
-    </div>
-    <div class="form-group">
-      <label for="modelName" data-i18n="modelNameLabel">模型名称:</label>
-      <input type="text" id="modelName" placeholder="例如: gemini-1.5-flash-latest 或 gpt-4o">
-    </div>
-    
-    <button id="saveConfigButton" data-i18n="saveConfig">保存配置</button>
-    <button type="button" id="testConfigButton" data-i18n="testConfig">测试连接</button>
-    <button type="button" id="clearFormButton" data-i18n="clearForm">清空表单</button>
-    <button type="button" id="cancelEditButton" class="hidden" data-i18n="cancelEdit">取消编辑</button>
-  </div>
+      <!-- ===== 设置面板 ===== -->
+      <div class="tab-panel" id="panel-settings">
+        <h1 data-i18n="optionsTitle">API 配置管理</h1>
 
-  <div class="config-list">
-    <h2 data-i18n="savedConfigsTitle">已保存的配置</h2>
-    <div id="configurationsList">
-      <p data-i18n="noConfigs">暂无配置。请添加一个新配置。</p>
-    </div>
-  </div>
-  
-  <p id="status"></p>
+        <div class="general-settings">
+          <h2 data-i18n="generalSettingsTitle">通用设置</h2>
+          <div class="form-group">
+            <label for="languageSelect" data-i18n="languageLabel">界面语言 / Interface Language:</label>
+            <select id="languageSelect">
+              <option value="zh">中文 (Chinese)</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <button id="saveGeneralSettingsButton" data-i18n="saveGeneralSettings">保存通用设置</button>
+        </div>
 
+        <div class="config-form" id="configFormContainer">
+          <h2 data-i18n="addEditConfigTitle">添加/编辑配置</h2>
+          <input type="hidden" id="configId">
+          <div class="form-group">
+            <label for="configName" data-i18n="configNameLabel">配置名称:</label>
+            <input type="text" id="configName" placeholder="例如：我的 Gemini 主力">
+          </div>
+          <div class="form-group">
+            <label for="apiKey" data-i18n="apiKeyLabel">API 密钥:</label>
+            <input type="password" id="apiKey" placeholder="粘贴您的 API 密钥">
+          </div>
+          <div class="form-group">
+            <label for="apiType" data-i18n="apiTypeLabel">API 类型:</label>
+            <select id="apiType">
+              <option value="gemini">Google Gemini</option>
+              <option value="openai">OpenAI 兼容 API</option>
+            </select>
+          </div>
+          <div class="form-group hidden" id="apiEndpointGroup">
+            <label for="apiEndpoint" data-i18n="apiEndpointLabel">API Endpoint URL:</label>
+            <input type="url" id="apiEndpoint" placeholder="例如: https://api.openai.com/v1/chat/completions">
+          </div>
+          <div class="form-group">
+            <label for="modelName" data-i18n="modelNameLabel">模型名称:</label>
+            <input type="text" id="modelName" placeholder="例如: gemini-1.5-flash-latest 或 gpt-4o">
+          </div>
+          <button id="saveConfigButton" data-i18n="saveConfig">保存配置</button>
+          <button type="button" id="testConfigButton" data-i18n="testConfig">测试连接</button>
+          <button type="button" id="clearFormButton" data-i18n="clearForm">清空表单</button>
+          <button type="button" id="cancelEditButton" class="hidden" data-i18n="cancelEdit">取消编辑</button>
+        </div>
+
+        <div class="config-list">
+          <h2 data-i18n="savedConfigsTitle">已保存的配置</h2>
+          <div id="configurationsList">
+            <p data-i18n="noConfigs">暂无配置。请添加一个新配置。</p>
+          </div>
+        </div>
+
+        <p id="status"></p>
+      </div>
+
+      <!-- ===== 存档面板 ===== -->
+      <div class="tab-panel" id="panel-archive">
+        <div class="archive-panel-inner">
+          <!-- 列表区 -->
+          <div class="archive-list-section">
+            <div class="archive-list-header">
+              <h2>已存档对话</h2>
+            </div>
+            <div id="chat-list">
+              <!-- Chat items inserted by archive.js -->
+            </div>
+          </div>
+
+          <!-- 详情区（点击列表项后显示） -->
+          <div class="archive-detail-section" style="display:none;" id="archive-detail-section">
+            <div id="chat-detail-container"></div>
+            <div id="archive-input-container" class="archive-input-container">
+              <div class="input-wrapper">
+                <textarea id="archive-chat-input" placeholder="输入消息..." rows="1"></textarea>
+                <button id="archive-send-btn" class="send-btn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="currentColor" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部清空按钮 -->
+          <div class="archive-list-footer">
+            <button id="clearAllArchivedButton" class="btn-danger">清空所有存档</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Prompt 面板 ===== -->
+      <div class="tab-panel" id="panel-prompts">
+        <div class="prompts-container">
+          <h1>管理 Prompt 模板</h1>
+
+          <div id="promptList" class="prompt-list"></div>
+
+          <h2>添加/编辑模板</h2>
+          <div class="form-container">
+            <input type="hidden" id="promptId">
+            <div>
+              <label for="promptName">模板名称:</label>
+              <input type="text" id="promptName" placeholder="例如：翻译成英文">
+            </div>
+            <div>
+              <label for="promptContent">模板内容 (使用 <code>{{text}}</code> 作为选中文本的占位符):</label>
+              <textarea id="promptContent" rows="5" placeholder="例如：请将以下文本翻译成英文：&#10;&#10;{{text}}"></textarea>
+            </div>
+            <div class="form-actions">
+              <button id="savePromptButton">保存模板</button>
+              <button id="promptClearFormButton" type="button">清空表单</button>
+            </div>
+          </div>
+
+          <p class="usage-note">
+            <strong>使用说明:</strong> 在模板内容中使用 <code>{{text}}</code> 作为占位符。当您在侧边栏点击模板快捷方式时：
+            <ul>
+              <li>如果当前有选中的网页文本，<code>{{text}}</code> 将被替换为该文本。</li>
+              <li>如果没有选中的文本，<code>{{text}}</code> 将被原样保留或根据您的输入进行处理。</li>
+            </ul>
+          </p>
+        </div>
+      </div>
+
+    </div><!-- /tab-content -->
+  </div><!-- /tab-layout -->
+
+  <script src="tab-controller.js"></script>
+  <script src="libs/marked.min.js"></script>
   <script src="options.js"></script>
+  <script src="archive.js"></script>
+  <script src="prompts.js"></script>
 </body>
 </html>

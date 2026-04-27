@@ -278,12 +278,12 @@ async function initialize() {
     if (splitChatButton) splitChatButton.addEventListener('click', handleSplitChat);
     if (viewArchivedChatsButton) {
         viewArchivedChatsButton.addEventListener('click', () => {
-            chrome.tabs.create({ url: chrome.runtime.getURL('archive.html') });
+            chrome.tabs.create({ url: chrome.runtime.getURL('options.html#archive') });
         });
     }
     if (managePromptsButton) {
         managePromptsButton.addEventListener('click', () => {
-            chrome.tabs.create({ url: chrome.runtime.getURL('prompts.html') });
+            chrome.tabs.create({ url: chrome.runtime.getURL('options.html#prompts') });
         });
     }
 

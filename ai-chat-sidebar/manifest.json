@@ -42,6 +42,7 @@
         "sidebar.html",
         "sidebar.css",
         "sidebar.js",
+        "tab-controller.js",
         "archive.html",
         "archive.js",
         "archive.css",
