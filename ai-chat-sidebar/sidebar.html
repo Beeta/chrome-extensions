@@ -90,11 +90,6 @@
       <button id="clearSelectedImageButton" data-i18n="clearImage"
         style="display: none; margin: 0 auto 8px auto; font-size: 0.8em; padding: 3px 8px; width: fit-content; background-color: var(--control-button-bg); color: var(--control-button-text); border: none; border-radius: var(--border-radius); cursor:pointer;">清除图片</button>
 
-      <div id="selectedTextPreview"
-        style="display:none; font-style: italic; color: gray; padding: 5px; border: 1px dashed #ccc; margin-bottom: 5px;">
-        <span data-i18n="quoteContent">引用内容:</span> <span id="selectedTextContent"></span>
-        <button id="clearSelectedTextButton" data-i18n="clear" style="margin-left: 5px; font-size: 0.8em;">清除</button>
-      </div>
 
       <!-- Page context card -->
       <div id="pageContextCard" class="page-context-card" style="display: none;">
@@ -117,6 +112,14 @@
             <span id="attachedPageUrl" class="attached-page-url"></span>
           </div>
           <button id="attachedPageClose" class="attached-page-close" title="移除">×</button>
+        </div>
+        <div id="selectedTextCard" style="display:none;" class="selected-text-card">
+          <div class="selected-text-icon">✂</div>
+          <div class="selected-text-info">
+            <span class="selected-text-label" data-i18n="quoteContent">引用内容</span>
+            <span id="selectedTextContent" class="selected-text-content"></span>
+          </div>
+          <button id="clearSelectedTextButton" class="selected-text-close" title="清除">×</button>
         </div>
         <textarea id="chatInput" placeholder="有问题，尽管问"></textarea>
         <div class="send-area-container">

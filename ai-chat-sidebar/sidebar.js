@@ -144,7 +144,7 @@ function t(key) {
 
 // --- DOM 元素获取 ---
 let chatOutput, chatInput, sendMessageButton, summarizePageButton, extractContentButton,
-    selectedTextPreview, selectedTextContent, clearSelectedTextButton,
+    selectedTextCard, selectedTextContent, clearSelectedTextButton,
     selectedImagePreviewContainer, clearSelectedImageButton,
     clearAllHistoryButton,
     splitChatButton, viewArchivedChatsButton,
@@ -175,7 +175,7 @@ async function initialize() {
     sendMessageButton = document.getElementById('sendMessageButton');
     summarizePageButton = document.getElementById('summarizePageButton');
     extractContentButton = document.getElementById('extractContentButton');
-    selectedTextPreview = document.getElementById('selectedTextPreview');
+    selectedTextCard = document.getElementById('selectedTextCard');
     selectedTextContent = document.getElementById('selectedTextContent');
     clearSelectedTextButton = document.getElementById('clearSelectedTextButton');
     selectedImagePreviewContainer = document.getElementById('selectedImagePreviewContainer');
@@ -538,7 +538,8 @@ function handleRuntimeMessages(request, sender, sendResponse) {
         case 'TEXT_SELECTED_FOR_SIDEBAR':
             currentSelectedText = request.text;
             if (selectedTextContent) selectedTextContent.textContent = currentSelectedText.length > 100 ? currentSelectedText.substring(0, 97) + '...' : currentSelectedText;
-            if (selectedTextPreview) selectedTextPreview.style.display = 'flex';
+            if (selectedTextCard) selectedTextCard.style.display = 'flex';
+            updatePageContextCardPosition();
             sendResponse({ status: "Selected text received in sidebar" });
             break;
 
@@ -566,9 +567,10 @@ function handleRuntimeMessages(request, sender, sendResponse) {
                 addMessageToChat({ role: 'model', parts: [{ text: `${t('extractFail')}: ${request.error}${request.warning ? ' (' + request.warning + ')' : ''}` }], timestamp: Date.now() });
             } else {
                 currentSelectedText = request.content;
-                if (selectedTextPreview && selectedTextContent) {
+                if (selectedTextCard && selectedTextContent) {
                     selectedTextContent.textContent = `${t('textSelected')} (${request.content.length})`;
-                    selectedTextPreview.style.display = 'flex';
+                    selectedTextCard.style.display = 'flex';
+                    updatePageContextCardPosition();
                 }
                 const successMsgText = `${t('extractSuccess')} (${request.content.length})` + (request.warning ? ` (${request.warning})` : '');
                 const successMsg = addMessageToChat({ role: 'model', parts: [{ text: successMsgText }], timestamp: Date.now(), isTempStatus: true });
@@ -806,10 +808,12 @@ function showAttachedPageCard(title, url, favIconUrl, tabId) {
         favicon.style.display = 'none';
     }
     card.style.display = 'flex';
+    updatePageContextCardPosition();
 
     document.getElementById('attachedPageClose').onclick = () => {
         card.style.display = 'none';
         pendingPageAttachment = null;
+        updatePageContextCardPosition();
     };
 }
 
@@ -1277,8 +1281,17 @@ function escapeHtml(unsafe) {
 
 function clearSelectedTextPreview() {
     currentSelectedText = null;
-    if (selectedTextPreview) selectedTextPreview.style.display = 'none';
+    if (selectedTextCard) selectedTextCard.style.display = 'none';
     if (selectedTextContent) selectedTextContent.textContent = '';
+    updatePageContextCardPosition();
+}
+
+function updatePageContextCardPosition() {
+    const inputFloat = document.querySelector('.input-float');
+    const pageContextCard = document.getElementById('pageContextCard');
+    if (!inputFloat || !pageContextCard) return;
+    const inputFloatHeight = inputFloat.offsetHeight;
+    pageContextCard.style.bottom = (inputFloatHeight + 24) + 'px';
 }
 
 function saveChatHistory() {
@@ -1450,6 +1463,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tabs && tabs.length > 0 && tabs[0].title) {
             titleEl.textContent = tabs[0].title;
             card.style.display = 'flex';
+            updatePageContextCardPosition();
         }
     });
 
