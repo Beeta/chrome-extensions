@@ -2,154 +2,26 @@
 
 // --- 全局变量 ---
 let currentApiKey = null;
-let currentApiType = 'gemini'; // Default to Gemini
-let currentApiEndpoint = ''; // For OpenAI-compatible APIs
-let currentModelName = 'gemini-2.0-flash'; // Default model
-let currentLanguage = 'zh'; // Default language
+let currentApiType = 'gemini';
+let currentApiEndpoint = '';
+let currentModelName = 'gemini-2.0-flash';
 
 let currentChat = [];
 let allChats = [];
 let archivedChats = [];
 let currentSelectedText = null;
-let currentSelectedImageUrl = null;
 let promptTemplates = [];
-let streamingMessageElement = null; // Track the DOM element being streamed to
-let isUserScrolling = false; // Track if user has manually scrolled
-let scrollCheckTimeout = null; // Debounce scroll detection
-
-// --- 翻译字典 ---
-const translations = {
-    zh: {
-        summarizePage: "总结当前网页",
-        extractContent: "提取全文作为引用",
-        splitChat: "分割当前对话",
-        viewArchived: "查看已存档对话",
-        managePrompts: "管理 Prompt",
-        promptShortcuts: "Prompt 快捷方式:",
-        clearImage: "清除图片",
-        quoteContent: "引用内容:",
-        clear: "清除",
-        send: "发送",
-        inputPlaceholder: "输入消息或使用快捷方式...",
-        errorConfigIncomplete: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。',
-        configLoaded: '已加载配置',
-        noConfigFound: '错误：未找到任何API配置或未设置活动配置。请<a href="#" id="open-options-link">在插件选项中添加并设置一个活动配置</a>。',
-        loadConfigFail: '错误：加载API配置失败。',
-        historyCleared: '所有对话历史已清除。',
-        confirmClearHistory: "确定要清除所有对话历史吗？此操作无法撤销。",
-        configUpdated: 'API 配置已更新。',
-        switchedConfig: '已切换到配置',
-        invalidConfig: '未找到有效的活动API配置。请在选项中设置。',
-        splitChatSuccess: '对话已分割并存档。新的对话已开始。',
-        archiveSuccess: '该问答已存档。',
-        archiveFail: '存档失败：未能找到对应的用户问题。',
-        textSelected: "引用内容",
-        imageSelected: "图片已选择",
-        extractFail: "提取失败",
-        extractSuccess: "✅ 提取成功",
-        summarizeRequest: "总结请求",
-        summarizeLinkWarning: "注意",
-        summarizeLinkFail: "无法总结",
-        linkSummaryProcessing: "正在总结链接",
-        processingWait: "请稍候。",
-        inputEmpty: '请输入消息或选择图片/文本后再发送。',
-        noContent: '没有有效内容发送。',
-        summarizePageRequest: '(正在请求总结当前网页...)',
-        summarizePageEmpty: "页面内容为空或未能提取到有效文本进行总结。",
-        summarizeErrorUnknown: "总结错误: 从背景脚本收到未知响应。",
-        extracting: '正在提取页面主要内容...',
-        thinking: '正在思考中...',
-        loadImage: '正在加载并处理图片...',
-        noContentToSend: "没有内容可以发送给AI。",
-        requestFail: "请求构建失败",
-        apiAuthFail: "API 认证失败",
-        apiRateLimit: "API 请求频率超限",
-        apiServerErr: "AI 服务端出现临时错误",
-        apiCallFail: "API 调用失败",
-        streamEmpty: 'API返回了空的流式响应。请检查API服务商的状态或稍后再试。',
-        networkErr: '网络连接失败。请检查您的网络连接并重试。',
-        apiCommErr: '与API通讯时发生错误。',
-        describeImage: "请描述这张图片。",
-        viewArchivedBtnCount: "查看已存档对话",
-        prompt_summarize_link: `请使用中文，清晰、简洁且全面地总结以下链接 ({title}{url}) 的主要内容。专注于核心信息，忽略广告、导航栏、页脚等非主要内容。如果内容包含技术信息或代码，请解释其核心概念和用途。如果是一篇文章，请提炼主要观点和论据。总结应易于理解，并抓住内容的精髓。\n\n链接内容文本如下：\n"{text}"`,
-        prompt_summarize_page: `请使用中文，清晰、简洁且全面地总结以下网页内容。如果内容包含技术信息或代码，请解释其核心概念和用途。如果是一篇文章，请提炼主要观点和论据。总结应易于理解，并抓住内容的精髓。\n\n网页内容如下：\n"{text}"`,
-        user_msg_about_quote: `关于以下引用内容：\n"{quote}"\n\n我的问题/指令是：\n"{msg}"`,
-        moreActions: "更多操作",
-        sendShortcut: "Cmd+Enter 发送" // New translation
-    },
-    en: {
-        summarizePage: "Summarize Page",
-        extractContent: "Extract Full Text",
-        splitChat: "Split Chat",
-        viewArchived: "Archived Chats",
-        managePrompts: "Manage Prompts",
-        promptShortcuts: "Prompt Shortcuts:",
-        clearImage: "Clear Image",
-        quoteContent: "Quote:",
-        clear: "Clear",
-        send: "Send",
-        inputPlaceholder: "Type a message or use shortcuts...",
-        errorConfigIncomplete: 'Error: Active API configuration incomplete. Please <a href="#" id="open-options-link">check options</a>.',
-        configLoaded: 'Config Loaded',
-        noConfigFound: 'Error: No active API configuration found. Please <a href="#" id="open-options-link">add one in options</a>.',
-        loadConfigFail: 'Error: Failed to load API config.',
-        historyCleared: 'Chat history cleared.',
-        confirmClearHistory: "Are you sure you want to clear all chat history? This cannot be undone.",
-        configUpdated: 'API Configuration Updated.',
-        switchedConfig: 'Switched to config',
-        invalidConfig: 'No valid active configuration found.',
-        splitChatSuccess: 'Chat split and archived. New conversation started.',
-        archiveSuccess: 'Q&A pair archived.',
-        archiveFail: 'Archive failed: User question not found.',
-        textSelected: "Quote content",
-        imageSelected: "Image selected",
-        extractFail: "Extraction Failed",
-        extractSuccess: "✅ Extraction Success",
-        summarizeRequest: "Summary Request",
-        summarizeLinkWarning: "Note",
-        summarizeLinkFail: "Cannot summarize",
-        linkSummaryProcessing: "Summarizing link",
-        processingWait: "Please wait.",
-        inputEmpty: 'Please enter a message or select content.',
-        noContent: 'No valid content to send.',
-        summarizePageRequest: '(Requesting page summary...)',
-        summarizePageEmpty: "Page content is empty or could not be extracted.",
-        summarizeErrorUnknown: "Summary Error: Unknown response from background.",
-        extracting: 'Extracting page content...',
-        thinking: 'Thinking...',
-        loadImage: 'Loading and processing image...',
-        noContentToSend: "No content to send to AI.",
-        requestFail: "Request build failed",
-        apiAuthFail: "API Auth Failed",
-        apiRateLimit: "API Rate Limit Exceeded",
-        apiServerErr: "AI Server Temporary Error",
-        apiCallFail: "API Call Failed",
-        streamEmpty: 'API returned empty stream response.',
-        networkErr: 'Network connection failed.',
-        apiCommErr: 'Error communicating with API.',
-        describeImage: "Please describe this image.",
-        viewArchivedBtnCount: "Archived Chats",
-        prompt_summarize_link: `Please summarize the main content of the following link ({title}{url}) clearly, concisely, and comprehensively in English. Focus on core information, ignoring ads and nav bars. If technical, explain core concepts. If an article, extract main arguments. Make it easy to understand.\n\nLink text:\n"{text}"`,
-        prompt_summarize_page: `Please summarize the following webpage content clearly, concisely, and comprehensively in English. Focus on core information. If technical, explain core concepts. If an article, extract main arguments. Make it easy to understand.\n\nPage content:\n"{text}"`,
-        user_msg_about_quote: `Regarding the following quote:\n"{quote}"\n\nMy question/instruction is:\n"{msg}"`,
-        moreActions: "More Actions",
-        sendShortcut: "Cmd+Enter to Send" // New translation
-    }
-};
-
-// Helper to get text based on current language
-function t(key) {
-    return translations[currentLanguage][key] || translations['zh'][key] || key;
-}
+let streamingMessageElement = null;
+let isUserScrolling = false;
+let scrollCheckTimeout = null;
 
 // --- DOM 元素获取 ---
 let chatOutput, chatInput, sendMessageButton, summarizePageButton, extractContentButton,
     selectedTextCard, selectedTextContent, clearSelectedTextButton,
-    selectedImagePreviewContainer, clearSelectedImageButton,
     clearAllHistoryButton,
     splitChatButton, viewArchivedChatsButton,
     managePromptsButton, promptShortcutsContainer,
-    toggleMoreActionsButton, moreActionsMenu; // Added variables for toggle
+    toggleMoreActionsButton, moreActionsMenu;
 
 let pendingPageAttachment = null; // { title, url, tabId }
 let pendingPageExtractCallback = null; // called when extractedPageContent arrives
@@ -178,8 +50,6 @@ async function initialize() {
     selectedTextCard = document.getElementById('selectedTextCard');
     selectedTextContent = document.getElementById('selectedTextContent');
     clearSelectedTextButton = document.getElementById('clearSelectedTextButton');
-    selectedImagePreviewContainer = document.getElementById('selectedImagePreviewContainer');
-    clearSelectedImageButton = document.getElementById('clearSelectedImageButton');
     clearAllHistoryButton = document.getElementById('clearAllHistoryButton');
     splitChatButton = document.getElementById('splitChatButton');
     viewArchivedChatsButton = document.getElementById('viewArchivedChatsButton');
@@ -193,20 +63,11 @@ async function initialize() {
         console.warn("Marked Library Test - marked is not an object or marked.parse is not a function.");
     }
 
-    // Explicitly hide the image clear button on init to ensure no empty space or ghost button
-    clearSelectedImagePreview();
-
-    // Load Configuration and Language
+    // Load Configuration
     try {
-        const result = await chrome.storage.sync.get(['apiConfigurations', 'activeConfigurationId', 'interfaceLanguage']);
+        const result = await chrome.storage.sync.get(['apiConfigurations', 'activeConfigurationId']);
         const configs = result.apiConfigurations || [];
         const activeId = result.activeConfigurationId;
-
-        // Set Language
-        if (result.interfaceLanguage) {
-            currentLanguage = result.interfaceLanguage;
-        }
-        updateInterfaceLanguage(); // Apply translations to UI
 
         let activeConfig = null;
         if (activeId && configs.length > 0) {
@@ -224,19 +85,19 @@ async function initialize() {
             currentModelName = activeConfig.modelName;
 
             if (!currentApiKey || !currentModelName || (currentApiType === 'openai' && !currentApiEndpoint)) {
-                addMessageToChat({ role: 'model', parts: [{ text: t('errorConfigIncomplete') }], timestamp: Date.now() });
+                addMessageToChat({ role: 'model', parts: [{ text: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。' }], timestamp: Date.now() });
                 disableInputs();
             } else {
                 enableInputs();
             }
         } else {
-            addMessageToChat({ role: 'model', parts: [{ text: t('noConfigFound') }], timestamp: Date.now() });
+            addMessageToChat({ role: 'model', parts: [{ text: '错误：未找到任何API配置或未设置活动配置。请<a href="#" id="open-options-link">在插件选项中添加并设置一个活动配置</a>。' }], timestamp: Date.now() });
             disableInputs();
         }
 
     } catch (e) {
         console.error("Sidebar: Error loading API configuration:", e);
-        addMessageToChat({ role: 'model', parts: [{ text: t('loadConfigFail') }], timestamp: Date.now() });
+        addMessageToChat({ role: 'model', parts: [{ text: '错误：加载API配置失败。' }], timestamp: Date.now() });
         disableInputs();
     }
 
@@ -262,15 +123,14 @@ async function initialize() {
     if (summarizePageButton) summarizePageButton.addEventListener('click', handleSummarizeCurrentPage);
     if (extractContentButton) extractContentButton.addEventListener('click', handleExtractContent);
     if (clearSelectedTextButton) clearSelectedTextButton.addEventListener('click', clearSelectedTextPreview);
-    if (clearSelectedImageButton) clearSelectedImageButton.addEventListener('click', clearSelectedImagePreview);
     if (clearAllHistoryButton) {
         clearAllHistoryButton.addEventListener('click', () => {
-            if (confirm(t('confirmClearHistory'))) {
+            if (confirm("确定要清除所有对话历史吗？此操作无法撤销。")) {
                 allChats = [];
                 currentChat = [];
                 saveChatHistory();
                 renderCurrentChat();
-                addMessageToChat({ role: 'model', parts: [{ text: t('historyCleared') }], timestamp: Date.now() });
+                addMessageToChat({ role: 'model', parts: [{ text: '所有对话历史已清除。' }], timestamp: Date.now() });
             }
         });
     }
@@ -302,12 +162,6 @@ async function initialize() {
 
     chrome.storage.onChanged.addListener(async (changes, namespace) => {
         if (namespace === 'sync') {
-            if (changes.interfaceLanguage) {
-                currentLanguage = changes.interfaceLanguage.newValue || 'zh';
-                updateInterfaceLanguage();
-                // Also reload prompts just in case defaults change (though defaults are currently hardcoded in prompt loader logic)
-            }
-
             if (changes.apiConfigurations || changes.activeConfigurationId) {
                 const result = await chrome.storage.sync.get(['apiConfigurations', 'activeConfigurationId']);
                 const configs = result.apiConfigurations || [];
@@ -321,16 +175,16 @@ async function initialize() {
                     activeConfig = configs[0];
                 }
 
-                let configStatusMessage = t('configUpdated');
+                let configStatusMessage = 'API 配置已更新。';
                 if (activeConfig) {
                     currentApiKey = activeConfig.apiKey;
                     currentApiType = activeConfig.apiType;
                     currentApiEndpoint = activeConfig.apiEndpoint || '';
                     currentModelName = activeConfig.modelName;
-                    configStatusMessage = `${t('switchedConfig')}: "${activeConfig.configName}" (${activeConfig.apiType})`;
+                    configStatusMessage = `已切换到配置: "${activeConfig.configName}" (${activeConfig.apiType})`;
 
                     if (!currentApiKey || !currentModelName || (currentApiType === 'openai' && !currentApiEndpoint)) {
-                        addMessageToChat({ role: 'model', parts: [{ text: t('errorConfigIncomplete') }], timestamp: Date.now() });
+                        addMessageToChat({ role: 'model', parts: [{ text: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。' }], timestamp: Date.now() });
                         disableInputs();
                     } else {
                         enableInputs();
@@ -340,7 +194,7 @@ async function initialize() {
                     currentApiType = 'gemini';
                     currentApiEndpoint = '';
                     currentModelName = '';
-                    configStatusMessage = t('invalidConfig');
+                    configStatusMessage = '未找到有效的活动API配置。请在选项中设置。';
                     disableInputs();
                 }
                 addMessageToChat({ role: 'model', parts: [{ text: configStatusMessage }], timestamp: Date.now() });
@@ -360,27 +214,6 @@ async function initialize() {
         }
     });
     chrome.runtime.onMessage.addListener(handleRuntimeMessages);
-}
-
-function updateInterfaceLanguage() {
-    const elements = document.querySelectorAll('[data-i18n]');
-    elements.forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (translations[currentLanguage][key]) {
-            // Preserve icons/structure if needed, for simple text buttons just replace
-            if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
-                el.textContent = translations[currentLanguage][key];
-            } else {
-                // For more complex structure, might need specific handling, but textContent is usually fine for buttons
-                // Special handling for specific IDs if they contain icons not in translation string
-                el.textContent = translations[currentLanguage][key];
-            }
-        }
-    });
-
-    if (chatInput) chatInput.placeholder = t('inputPlaceholder');
-    if (toggleMoreActionsButton) toggleMoreActionsButton.title = t('moreActions');
-    updateArchivedChatsButtonCount();
 }
 
 async function loadPromptTemplates() {
@@ -445,29 +278,9 @@ function applyPromptTemplate(template) {
     chatInput.scrollTop = chatInput.scrollHeight;
 }
 
-function displaySelectedImagePreview(imageUrl) {
-    if (selectedImagePreviewContainer && imageUrl) {
-        selectedImagePreviewContainer.innerHTML = `<img src="${imageUrl}" alt="Selected image preview" style="max-width: 100%; max-height: 150px; object-fit: contain; border: 1px solid var(--border-color); border-radius: var(--border-radius);">`;
-        selectedImagePreviewContainer.style.display = 'block';
-        if (clearSelectedImageButton) clearSelectedImageButton.style.display = 'block';
-        chatInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else {
-        clearSelectedImagePreview();
-    }
-}
-
-function clearSelectedImagePreview() {
-    currentSelectedImageUrl = null;
-    if (selectedImagePreviewContainer) {
-        selectedImagePreviewContainer.innerHTML = '';
-        selectedImagePreviewContainer.style.display = 'none';
-    }
-    if (clearSelectedImageButton) clearSelectedImageButton.style.display = 'none';
-}
-
 function updateArchivedChatsButtonCount() {
     if (viewArchivedChatsButton) {
-        viewArchivedChatsButton.textContent = `${t('viewArchivedBtnCount')} (${archivedChats.length})`;
+        viewArchivedChatsButton.textContent = `查看已存档对话 (${archivedChats.length})`;
     }
 }
 
@@ -509,7 +322,7 @@ function archiveQaPair(aiMessageIndexInCurrentChat) {
         renderCurrentChat();
         saveCurrentChat();
 
-        const tempStatusMsg = addMessageToChat({ role: 'model', parts: [{ text: t('archiveSuccess') }], timestamp: Date.now(), isTempStatus: true });
+        const tempStatusMsg = addMessageToChat({ role: 'model', parts: [{ text: '该问答已存档。' }], timestamp: Date.now(), isTempStatus: true });
         setTimeout(() => {
             const idx = currentChat.findIndex(m => m.timestamp === tempStatusMsg.timestamp && m.isTempStatus);
             if (idx > -1) {
@@ -520,7 +333,7 @@ function archiveQaPair(aiMessageIndexInCurrentChat) {
         }, 3000);
     } else {
         console.warn("Could not find user message for AI message at index:", aiMessageIndexInCurrentChat);
-        const tempErrorMsg = addMessageToChat({ role: 'model', parts: [{ text: t('archiveFail') }], timestamp: Date.now(), isTempStatus: true });
+        const tempErrorMsg = addMessageToChat({ role: 'model', parts: [{ text: '存档失败：未能找到对应的用户问题。' }], timestamp: Date.now(), isTempStatus: true });
         setTimeout(() => {
             const idx = currentChat.findIndex(m => m.timestamp === tempErrorMsg.timestamp && m.isTempStatus);
             if (idx > -1) {
@@ -543,12 +356,6 @@ function handleRuntimeMessages(request, sender, sendResponse) {
             sendResponse({ status: "Selected text received in sidebar" });
             break;
 
-        case 'IMAGE_SELECTED_FOR_SIDEBAR':
-            currentSelectedImageUrl = request.imageUrl;
-            displaySelectedImagePreview(currentSelectedImageUrl);
-            sendResponse({ status: "Image URL received in sidebar" });
-            break;
-
         case 'extractedPageContent':
             if (pendingPageExtractCallback) {
                 const cb = pendingPageExtractCallback;
@@ -562,17 +369,17 @@ function handleRuntimeMessages(request, sender, sendResponse) {
                 sendResponse({ status: "Page content processed" });
                 break;
             }
-            removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text.includes(t('extracting')));
+            removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text.includes('正在提取页面主要内容'));
             if (request.error) {
-                addMessageToChat({ role: 'model', parts: [{ text: `${t('extractFail')}: ${request.error}${request.warning ? ' (' + request.warning + ')' : ''}` }], timestamp: Date.now() });
+                addMessageToChat({ role: 'model', parts: [{ text: `提取失败: ${request.error}${request.warning ? ' (' + request.warning + ')' : ''}` }], timestamp: Date.now() });
             } else {
                 currentSelectedText = request.content;
                 if (selectedTextCard && selectedTextContent) {
-                    selectedTextContent.textContent = `${t('textSelected')} (${request.content.length})`;
+                    selectedTextContent.textContent = `引用内容 (${request.content.length})`;
                     selectedTextCard.style.display = 'flex';
                     updatePageContextCardPosition();
                 }
-                const successMsgText = `${t('extractSuccess')} (${request.content.length})` + (request.warning ? ` (${request.warning})` : '');
+                const successMsgText = `✅ 提取成功 (${request.content.length})` + (request.warning ? ` (${request.warning})` : '');
                 const successMsg = addMessageToChat({ role: 'model', parts: [{ text: successMsgText }], timestamp: Date.now(), isTempStatus: true });
                 setTimeout(() => removeMessageByContentCheck(msg => msg.timestamp === successMsg.timestamp), 6000);
             }
@@ -580,47 +387,10 @@ function handleRuntimeMessages(request, sender, sendResponse) {
             break;
 
         case 'EXTRACT_CONTENT_ERROR':
-            removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text.includes(t('extracting')));
-            addMessageToChat({ role: 'model', parts: [{ text: `${t('extractFail')}: ${request.message}` }], timestamp: Date.now() });
+            removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text.includes('正在提取页面主要内容'));
+            addMessageToChat({ role: 'model', parts: [{ text: `提取失败: ${request.message}` }], timestamp: Date.now() });
             sendResponse({ status: "Error notice displayed" });
             break;
-
-        case 'SUMMARIZE_EXTERNAL_TEXT_FOR_SIDEBAR': {
-            const { text, linkUrl, linkTitle, warning } = request;
-            removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text.includes(t('linkSummaryProcessing')));
-            addMessageToChat({ role: 'user', parts: [{ text: `${t('summarizeRequest')}：[${linkTitle || 'Link'}](${linkUrl}) (${text?.length || 0})` }], timestamp: Date.now() });
-            if (warning) {
-                addMessageToChat({ role: 'model', parts: [{ text: `${t('summarizeLinkWarning')}: ${warning}` }], timestamp: Date.now() });
-            }
-            if (!text || text.trim() === "") {
-                addMessageToChat({ role: 'model', parts: [{ text: `${t('summarizeLinkFail')} [${linkTitle || linkUrl}](${linkUrl})` }], timestamp: Date.now() });
-                sendResponse({ error: "No text provided" });
-            } else {
-                // Use dynamic prompt from translations
-                let prompt = t('prompt_summarize_link');
-                prompt = prompt.replace('{title}', linkTitle ? linkTitle + ' - ' : '')
-                    .replace('{url}', linkUrl)
-                    .replace('{text}', text);
-                callApi(prompt, true, null).then(() => sendResponse({ status: "Summary initiated" }));
-            }
-            break;
-        }
-
-        case 'SHOW_LINK_SUMMARY_ERROR': {
-            const { message, url, title } = request;
-            removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text.includes(t('linkSummaryProcessing')));
-            addMessageToChat({ role: 'model', parts: [{ text: `${t('summarizeLinkFail')} [${title || url}](${url}): ${message}` }], timestamp: Date.now() });
-            sendResponse({ status: "Error displayed" });
-            break;
-        }
-
-        case 'LINK_SUMMARIZATION_STARTED': {
-            const { url, title } = request;
-            removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text.includes(t('linkSummaryProcessing')));
-            addMessageToChat({ role: 'model', parts: [{ text: `${t('linkSummaryProcessing')}: [${title || url}](${url})... ${t('processingWait')}` }], timestamp: Date.now(), isTempStatus: true });
-            sendResponse({ status: "Notified user" });
-            break;
-        }
 
         case 'TRIGGER_SIDEBAR_PAGE_SUMMARY':
             handleSummarizeCurrentPage();
@@ -651,7 +421,7 @@ async function handleSendMessage() {
         userMessageForApi = messageText.replace(/{{text}}/g, currentSelectedText);
         displayUserMessageInChat = userMessageForApi;
     } else if (currentSelectedText && !messageText.includes("{{text}}") && messageText) {
-        let msgStruct = t('user_msg_about_quote');
+        const msgStruct = `关于以下引用内容：\n"{quote}"\n\n我的问题/指令是：\n"{msg}"`;
         userMessageForApi = msgStruct.replace('{quote}', currentSelectedText).replace('{msg}', messageText);
         displayUserMessageInChat = messageText;
         quoteTextForChat = currentSelectedText;
@@ -660,33 +430,22 @@ async function handleSendMessage() {
         displayUserMessageInChat = currentSelectedText;
     }
 
-    const imageUrlToSend = currentSelectedImageUrl;
-
-    if (!userMessageForApi.trim() && !imageUrlToSend) {
-        const tempMsg = addMessageToChat({ role: 'model', parts: [{ text: t('inputEmpty') }], timestamp: Date.now(), isTempStatus: true });
+    if (!userMessageForApi.trim()) {
+        const tempMsg = addMessageToChat({ role: 'model', parts: [{ text: '请输入消息或选择文本后再发送。' }], timestamp: Date.now(), isTempStatus: true });
         setTimeout(() => removeMessageByContentCheck(msg => msg.timestamp === tempMsg.timestamp && msg.isTempStatus), 3000);
         return;
     }
 
     if (!currentApiKey || !currentModelName || (currentApiType === 'openai' && !currentApiEndpoint)) {
-        addMessageToChat({ role: 'model', parts: [{ text: t('errorConfigIncomplete') }], timestamp: Date.now() });
+        addMessageToChat({ role: 'model', parts: [{ text: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。' }], timestamp: Date.now() });
         disableInputs(); return;
     }
 
     let finalDisplayMessage = displayUserMessageInChat;
     let finalApiTextMessage = userMessageForApi;
 
-    if (imageUrlToSend) {
-        if (!finalApiTextMessage.trim() && !currentSelectedText) {
-            finalDisplayMessage = `(${t('imageSelected')})`;
-            finalApiTextMessage = t('describeImage');
-        } else {
-            finalDisplayMessage = finalDisplayMessage ? `${finalDisplayMessage} (${t('imageSelected')})` : `(${t('imageSelected')})`;
-        }
-    }
-
-    if (!finalApiTextMessage.trim() && !imageUrlToSend) {
-        const tempMsg = addMessageToChat({ role: 'model', parts: [{ text: t('noContent') }], timestamp: Date.now(), isTempStatus: true });
+    if (!finalApiTextMessage.trim()) {
+        const tempMsg = addMessageToChat({ role: 'model', parts: [{ text: '没有有效内容发送。' }], timestamp: Date.now(), isTempStatus: true });
         setTimeout(() => removeMessageByContentCheck(msg => msg.timestamp === tempMsg.timestamp && msg.isTempStatus), 3000);
         return;
     }
@@ -702,23 +461,20 @@ async function handleSendMessage() {
 
         chatInput.value = '';
         clearSelectedTextPreview();
-        clearSelectedImagePreview();
         disableInputs();
 
         const capturedApiMsg = finalApiTextMessage;
-        const capturedImageUrl = imageUrlToSend;
 
         pendingPageExtractCallback = async (pageContent) => {
             let apiMsg = capturedApiMsg;
             if (pageContent) {
                 apiMsg = `以下是页面内容：\n\n${pageContent}\n\n用户问题：${capturedApiMsg}`;
             }
-            await callApi(apiMsg, false, capturedImageUrl);
+            await callApi(apiMsg, false);
         };
 
         chrome.runtime.sendMessage({ action: "extractActiveTabContent" }, (response) => {
             if (chrome.runtime.lastError || (response && response.success === false)) {
-                // extraction failed, still send without page content
                 const cb = pendingPageExtractCallback;
                 pendingPageExtractCallback = null;
                 enableInputs();
@@ -736,42 +492,39 @@ async function handleSendMessage() {
 
     chatInput.value = '';
     clearSelectedTextPreview();
-    clearSelectedImagePreview();
 
-    await callApi(finalApiTextMessage, false, imageUrlToSend);
+    await callApi(finalApiTextMessage, false);
 }
 
 function handleSummarizeCurrentPage() {
     if (!currentApiKey || !currentModelName || (currentApiType === 'openai' && !currentApiEndpoint)) {
-        addMessageToChat({ role: 'model', parts: [{ text: t('errorConfigIncomplete') }], timestamp: Date.now() });
+        addMessageToChat({ role: 'model', parts: [{ text: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。' }], timestamp: Date.now() });
         disableInputs();
         return;
     }
-    const summaryRequestText = t('summarizePageRequest');
+    const summaryRequestText = '(正在请求总结当前网页...)';
     addMessageToChat({ role: 'user', parts: [{ text: summaryRequestText }], timestamp: Date.now(), isTempStatus: true });
 
     chrome.runtime.sendMessage({ action: "getAndSummarizePage" }, async (response) => {
         removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text === summaryRequestText);
 
         if (chrome.runtime.lastError) {
-            addMessageToChat({ role: 'model', parts: [{ text: `${t('summarizeLinkFail')} (CS): ${chrome.runtime.lastError.message}` }], timestamp: Date.now() });
+            addMessageToChat({ role: 'model', parts: [{ text: `无法总结 (CS): ${chrome.runtime.lastError.message}` }], timestamp: Date.now() });
             return;
         }
 
         if (response && typeof response.contentForSummary === 'string') {
             const pageContent = response.contentForSummary;
             if (pageContent.trim() === "") {
-                addMessageToChat({ role: 'user', parts: [{ text: t('summarizeRequest') }], timestamp: Date.now() });
-                addMessageToChat({ role: 'model', parts: [{ text: t('summarizePageEmpty') }], timestamp: Date.now() });
+                addMessageToChat({ role: 'user', parts: [{ text: '总结请求' }], timestamp: Date.now() });
+                addMessageToChat({ role: 'model', parts: [{ text: '页面内容为空或未能提取到有效文本进行总结。' }], timestamp: Date.now() });
                 return;
             }
-            let prompt = t('prompt_summarize_page');
-            prompt = prompt.replace('{text}', pageContent);
+            let prompt = `请使用中文，清晰、简洁且全面地总结以下网页内容。如果内容包含技术信息或代码，请解释其核心概念和用途。如果是一篇文章，请提炼主要观点和论据。总结应易于理解，并抓住内容的精髓。\n\n网页内容如下：\n"${pageContent}"`;
 
-            // Create a more informative user message with URL and title
             const pageUrl = response.pageUrl || '';
             const pageTitle = response.pageTitle || '';
-            let userMessage = t('summarizeRequest');
+            let userMessage = '总结请求';
 
             if (pageTitle) {
                 userMessage += `: "${pageTitle}"`;
@@ -779,16 +532,16 @@ function handleSummarizeCurrentPage() {
             if (pageUrl) {
                 userMessage += `\n${pageUrl}`;
             }
-            userMessage += `\n(${pageContent.length} ${t('characters') || 'characters'})`;
+            userMessage += `\n(${pageContent.length} characters)`;
 
             addMessageToChat({ role: 'user', parts: [{ text: userMessage }], timestamp: Date.now() });
-            await callApi(prompt, true, null);
+            await callApi(prompt, true);
         } else if (response && response.error) {
-            addMessageToChat({ role: 'user', parts: [{ text: t('summarizeRequest') }], timestamp: Date.now() });
-            addMessageToChat({ role: 'model', parts: [{ text: `${t('summarizeLinkFail')}: ${response.error}` }], timestamp: Date.now() });
+            addMessageToChat({ role: 'user', parts: [{ text: '总结请求' }], timestamp: Date.now() });
+            addMessageToChat({ role: 'model', parts: [{ text: `无法总结: ${response.error}` }], timestamp: Date.now() });
         } else {
-            addMessageToChat({ role: 'user', parts: [{ text: t('summarizeRequest') }], timestamp: Date.now() });
-            addMessageToChat({ role: 'model', parts: [{ text: t('summarizeErrorUnknown') }], timestamp: Date.now() });
+            addMessageToChat({ role: 'user', parts: [{ text: '总结请求' }], timestamp: Date.now() });
+            addMessageToChat({ role: 'model', parts: [{ text: '总结错误: 从背景脚本收到未知响应。' }], timestamp: Date.now() });
         }
     });
 }
@@ -819,18 +572,18 @@ function showAttachedPageCard(title, url, favIconUrl, tabId) {
 
 function handleExtractContent() {
     if (!currentApiKey) {
-        addMessageToChat({ role: 'model', parts: [{ text: t('errorConfigIncomplete') }], timestamp: Date.now() });
+        addMessageToChat({ role: 'model', parts: [{ text: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。' }], timestamp: Date.now() });
         disableInputs();
         return;
     }
 
-    const tempStatusMsg = addMessageToChat({ role: 'model', parts: [{ text: t('extracting') }], timestamp: Date.now(), isTempStatus: true });
+    const tempStatusMsg = addMessageToChat({ role: 'model', parts: [{ text: '正在提取页面主要内容...' }], timestamp: Date.now(), isTempStatus: true });
 
     chrome.runtime.sendMessage({ action: "extractActiveTabContent" }, (response) => {
         if (chrome.runtime.lastError || (response && !response.success)) {
             removeMessageByContentCheck(msg => msg.timestamp === tempStatusMsg.timestamp);
             const errorMessage = response?.error || chrome.runtime.lastError?.message || "Unknown";
-            addMessageToChat({ role: 'model', parts: [{ text: `${t('extractFail')}: ${errorMessage}` }], timestamp: Date.now() });
+            addMessageToChat({ role: 'model', parts: [{ text: `提取失败: ${errorMessage}` }], timestamp: Date.now() });
         }
     });
 }
@@ -852,13 +605,13 @@ function enableInputs() {
     if (splitChatButton) splitChatButton.disabled = false;
 }
 
-async function callApi(userMessageContent, isSummary = false, imageUrl = null) {
+async function callApi(userMessageContent, isSummary = false) {
     if (!currentApiKey || !currentModelName || (currentApiType === 'openai' && !currentApiEndpoint)) {
-        addMessageToChat({ role: 'model', parts: [{ text: t('errorConfigIncomplete') }], timestamp: Date.now() });
+        addMessageToChat({ role: 'model', parts: [{ text: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。' }], timestamp: Date.now() });
         return;
     }
 
-    const thinkingMessage = addMessageToChat({ role: 'model', parts: [{ text: t('thinking') }], timestamp: Date.now(), isThinking: true });
+    const thinkingMessage = addMessageToChat({ role: 'model', parts: [{ text: '正在思考中...' }], timestamp: Date.now(), isThinking: true });
 
     let endpoint = '';
     let requestBody = {};
@@ -894,26 +647,7 @@ async function callApi(userMessageContent, isSummary = false, imageUrl = null) {
             if (userMessageContent && userMessageContent.trim() !== "") {
                 geminiUserParts.push({ text: userMessageContent });
             }
-            if (imageUrl) {
-                const tempImageStatusMsg = addMessageToChat({ role: 'model', parts: [{ text: t('loadImage') }], timestamp: Date.now(), isTempStatus: true });
-                try {
-                    const response = await fetch(imageUrl);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const blob = await response.blob();
-                    const mimeType = blob.type || 'application/octet-stream';
-                    if (!mimeType.startsWith('image/')) throw new Error(`Invalid MIME: ${mimeType}`);
-                    const base64Data = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-                        reader.onerror = (error) => reject(new Error("FileReader error: " + error.message));
-                        reader.readAsDataURL(blob);
-                    });
-                    geminiUserParts.push({ inlineData: { mimeType: mimeType, data: base64Data } });
-                } finally {
-                    if (tempImageStatusMsg) removeMessageByContentCheck(msg => msg.timestamp === tempImageStatusMsg.timestamp);
-                }
-            }
-            if (geminiUserParts.length === 0) throw new Error(t('noContentToSend'));
+            if (geminiUserParts.length === 0) throw new Error("没有内容可以发送给AI。");
             requestBody = { contents: [...historyForAPI, { role: "user", parts: geminiUserParts }] };
 
         } else if (currentApiType === 'openai') {
@@ -923,29 +657,7 @@ async function callApi(userMessageContent, isSummary = false, imageUrl = null) {
             if (userMessageContent && userMessageContent.trim() !== "") {
                 openaiCurrentUserMessageContent.push({ type: "text", text: userMessageContent });
             }
-            if (imageUrl) {
-                const tempImageStatusMsg = addMessageToChat({ role: 'model', parts: [{ text: t('loadImage') }], timestamp: Date.now(), isTempStatus: true });
-                try {
-                    const response = await fetch(imageUrl);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const blob = await response.blob();
-                    const mimeType = blob.type || 'application/octet-stream';
-                    if (!mimeType.startsWith('image/')) throw new Error(`Invalid MIME: ${mimeType}`);
-                    const base64DataUri = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result);
-                        reader.onerror = (error) => reject(new Error("FileReader error: " + error.message));
-                        reader.readAsDataURL(blob);
-                    });
-                    openaiCurrentUserMessageContent.push({ type: "image_url", image_url: { "url": base64DataUri } });
-                } finally {
-                    if (tempImageStatusMsg) removeMessageByContentCheck(msg => msg.timestamp === tempImageStatusMsg.timestamp);
-                }
-            }
-            if (openaiCurrentUserMessageContent.length === 0) throw new Error(t('noContentToSend'));
-            if (openaiCurrentUserMessageContent.some(c => c.type === 'image_url') && !openaiCurrentUserMessageContent.some(c => c.type === 'text')) {
-                openaiCurrentUserMessageContent.unshift({ type: "text", text: t('describeImage') });
-            }
+            if (openaiCurrentUserMessageContent.length === 0) throw new Error("没有内容可以发送给AI。");
             requestBody = {
                 model: currentModelName,
                 messages: [...historyForAPI, { role: "user", content: openaiCurrentUserMessageContent }],
@@ -956,7 +668,7 @@ async function callApi(userMessageContent, isSummary = false, imageUrl = null) {
         }
     } catch (error) {
         removeMessageByContentCheck(msg => msg.isThinking && msg.timestamp === thinkingMessage.timestamp);
-        addMessageToChat({ role: 'model', parts: [{ text: `${t('requestFail')}: ${error.message}` }], timestamp: Date.now() });
+        addMessageToChat({ role: 'model', parts: [{ text: `请求构建失败: ${error.message}` }], timestamp: Date.now() });
         return;
     }
 
@@ -984,19 +696,19 @@ async function callApi(userMessageContent, isSummary = false, imageUrl = null) {
             switch (response.status) {
                 case 401:
                 case 403:
-                    friendlyErrorMessage = `${t('apiAuthFail')} (${response.status}). <a href="#" id="open-options-link">Check Config</a>.<br><small>${errorDetails}</small>`;
+                    friendlyErrorMessage = `API 认证失败 (${response.status}). <a href="#" id="open-options-link">Check Config</a>.<br><small>${errorDetails}</small>`;
                     break;
                 case 429:
-                    friendlyErrorMessage = `${t('apiRateLimit')} (429).<br><small>${errorDetails}</small>`;
+                    friendlyErrorMessage = `API 请求频率超限 (429).<br><small>${errorDetails}</small>`;
                     break;
                 case 500:
                 case 502:
                 case 503:
                 case 504:
-                    friendlyErrorMessage = `${t('apiServerErr')} (${response.status}).<br><small>${errorDetails}</small>`;
+                    friendlyErrorMessage = `AI 服务端出现临时错误 (${response.status}).<br><small>${errorDetails}</small>`;
                     break;
                 default:
-                    friendlyErrorMessage = `${t('apiCallFail')} (${response.status}).<br><small>${errorDetails}</small>`;
+                    friendlyErrorMessage = `API 调用失败 (${response.status}).<br><small>${errorDetails}</small>`;
             }
             addMessageToChat({ role: 'model', parts: [{ text: friendlyErrorMessage }], timestamp: Date.now() });
             return;
@@ -1005,6 +717,7 @@ async function callApi(userMessageContent, isSummary = false, imageUrl = null) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let aiResponseText = '';
+        let aiThinkingText = '';
         let aiMessage = null;
         let buffer = '';
 
@@ -1025,27 +738,48 @@ async function callApi(userMessageContent, isSummary = false, imageUrl = null) {
                 try {
                     const data = JSON.parse(jsonStr);
                     let chunkText = '';
+                    let chunkThinking = '';
 
                     if (currentApiType === 'gemini') {
                         if (data.candidates && data.candidates[0]?.content?.parts) {
-                            chunkText = data.candidates[0].content.parts.map(part => part.text).join("");
+                            for (const part of data.candidates[0].content.parts) {
+                                if (part.thought) {
+                                    chunkThinking += part.text || '';
+                                } else {
+                                    chunkText += part.text || '';
+                                }
+                            }
                         }
                     } else if (currentApiType === 'openai') {
-                        if (data.choices && data.choices[0]?.delta?.content) {
-                            chunkText = data.choices[0].delta.content;
+                        if (data.choices && data.choices[0]?.delta) {
+                            const delta = data.choices[0].delta;
+                            if (delta.reasoning_content) {
+                                chunkThinking = delta.reasoning_content;
+                            } else if (delta.reasoning) {
+                                chunkThinking = delta.reasoning;
+                            }
+                            if (delta.content) {
+                                chunkText = delta.content;
+                            }
                         }
                     }
 
-                    if (chunkText) {
+                    if (chunkThinking || chunkText) {
                         if (!aiMessage) {
-                            aiMessage = addMessageToChat({ role: 'model', parts: [{ text: '' }], timestamp: Date.now() });
+                            aiMessage = addMessageToChat({ role: 'model', parts: [{ text: '' }], thinkingText: '', timestamp: Date.now() });
                             // Store reference to the DOM element for this streaming message
                             streamingMessageElement = chatOutput.lastElementChild;
                         }
-                        aiResponseText += chunkText;
-                        aiMessage.parts[0].text = aiResponseText;
+                        if (chunkThinking) {
+                            aiThinkingText += chunkThinking;
+                            aiMessage.thinkingText = aiThinkingText;
+                        }
+                        if (chunkText) {
+                            aiResponseText += chunkText;
+                            aiMessage.parts[0].text = aiResponseText;
+                        }
                         // Update only the streaming message instead of re-rendering all
-                        updateStreamingMessage(aiResponseText);
+                        updateStreamingMessage(aiResponseText, aiThinkingText);
                     }
                 } catch (error) {
                     console.warn('Error parsing stream chunk:', error, 'Chunk:', jsonStr);
@@ -1059,23 +793,23 @@ async function callApi(userMessageContent, isSummary = false, imageUrl = null) {
                     const finalJson = JSON.parse(buffer.substring(6));
                     if (finalJson.promptFeedback?.blockReason) {
                         aiMessage.parts[0].text += `\n\n[Block Reason: ${finalJson.promptFeedback.blockReason}]`;
-                        updateStreamingMessage(aiMessage.parts[0].text);
+                        updateStreamingMessage(aiMessage.parts[0].text, aiThinkingText);
                     }
                 } catch (e) { /* Ignore if buffer is not valid JSON */ }
             }
             // Apply markdown formatting to the final message
-            finalizeStreamingMessage(aiResponseText);
+            finalizeStreamingMessage(aiResponseText, aiThinkingText);
             saveCurrentChat();
         } else {
-            addMessageToChat({ role: 'model', parts: [{ text: t('streamEmpty') }], timestamp: Date.now() });
+            addMessageToChat({ role: 'model', parts: [{ text: 'API返回了空的流式响应。请检查API服务商的状态或稍后再试。' }], timestamp: Date.now() });
         }
 
     } catch (error) {
         console.error(`Error calling or streaming from ${currentApiType} API:`, error);
         removeMessageByContentCheck(msg => msg.isThinking && msg.timestamp === thinkingMessage.timestamp);
-        let friendlyError = t('apiCommErr');
+        let friendlyError = '与API通讯时发生错误。';
         if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-            friendlyError = t('networkErr');
+            friendlyError = '网络连接失败。请检查您的网络连接并重试。';
         } else {
             friendlyError += ` ${error.message}`;
         }
@@ -1097,11 +831,8 @@ function addMessageToChat(message) {
         }
     }
 
-    if (message.isTempStatus && message.parts[0].text.includes(t('linkSummaryProcessing'))) {
-        removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text.includes(t('linkSummaryProcessing')));
-    }
-    if (message.isTempStatus && message.parts[0].text.includes(t('loadImage'))) {
-        removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text.includes(t('loadImage')));
+    if (message.isTempStatus && message.parts[0].text.includes('正在提取页面主要内容')) {
+        removeMessageByContentCheck(msg => msg.isTempStatus && msg.parts[0].text.includes('正在提取页面主要内容'));
     }
 
     const messageWithTimestamp = { ...message, timestamp: message.timestamp || Date.now() };
@@ -1114,17 +845,34 @@ function addMessageToChat(message) {
 }
 
 // Efficiently update only the streaming message content
-function updateStreamingMessage(text) {
+function updateStreamingMessage(text, thinkingText) {
     if (!streamingMessageElement) return;
 
     const contentWrapper = streamingMessageElement.querySelector('.message-content-wrapper');
     if (contentWrapper) {
-        // Render markdown in real-time during streaming
-        try {
-            contentWrapper.innerHTML = marked.parse(text);
-        } catch (e) {
-            contentWrapper.textContent = text;
+        let html = '';
+
+        // Render thinking content as a collapsible details block
+        if (thinkingText) {
+            let thinkingHtml = '';
+            try {
+                thinkingHtml = marked.parse(thinkingText);
+            } catch (e) {
+                thinkingHtml = escapeHtml(thinkingText).replace(/\n/g, '<br>');
+            }
+            html += `<details class="thinking-block" open><summary>💭 思考过程</summary><div class="thinking-content">${thinkingHtml}</div></details>`;
         }
+
+        // Render main response
+        if (text) {
+            try {
+                html += marked.parse(text);
+            } catch (e) {
+                html += escapeHtml(text).replace(/\n/g, '<br>');
+            }
+        }
+
+        contentWrapper.innerHTML = html;
 
         // Auto-scroll if user hasn't manually scrolled
         if (!isUserScrolling && chatOutput) {
@@ -1134,7 +882,7 @@ function updateStreamingMessage(text) {
 }
 
 // Apply markdown to the final streamed message
-function finalizeStreamingMessage(rawText) {
+function finalizeStreamingMessage(rawText, thinkingText) {
     if (!streamingMessageElement) return;
 
     streamingMessageElement = null;
@@ -1169,13 +917,25 @@ function renderCurrentChat() {
 
         let contentHtml = '';
         const textContent = (msg.parts && msg.parts[0] && typeof msg.parts[0].text === 'string') ? msg.parts[0].text : "";
+        const thinkingContent = msg.thinkingText || "";
 
         if (msg.role === 'model' && typeof marked !== 'undefined' && typeof marked.parse === 'function' && !msg.isTempStatus && !msg.isThinking) {
+            // Render thinking block if present
+            if (thinkingContent) {
+                let thinkingHtml = '';
+                try {
+                    thinkingHtml = marked.parse(thinkingContent);
+                } catch (e) {
+                    thinkingHtml = escapeHtml(thinkingContent).replace(/\n/g, '<br>');
+                }
+                contentHtml += `<details class="thinking-block"><summary>💭 思考过程</summary><div class="thinking-content">${thinkingHtml}</div></details>`;
+            }
+            // Render main response
             try {
-                contentHtml = marked.parse(textContent);
+                contentHtml += marked.parse(textContent);
             } catch (e) {
                 console.error("Error parsing markdown:", e, "for text:", textContent);
-                contentHtml = escapeHtml(textContent).replace(/\n/g, '<br>');
+                contentHtml += escapeHtml(textContent).replace(/\n/g, '<br>');
             }
         } else {
             contentHtml = escapeHtml(textContent).replace(/\n/g, '<br>');

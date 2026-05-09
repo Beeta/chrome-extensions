@@ -4,7 +4,6 @@
 
     async function initArchive() {
         let archivedChats = [];
-        let currentLanguage = 'zh'; // Default
         let currentApiKey = '';
         let currentApiType = 'gemini';
         let currentApiEndpoint = '';
@@ -83,73 +82,6 @@
             });
         }
 
-        const translations = {
-            zh: {
-                archiveTitle: "已存档的对话",
-                loadingArchive: "正在加载存档...",
-                clearAllArchives: "清空所有存档",
-                noArchives: "没有已存档的对话。",
-                qaPair: "问答",
-                chatStarted: "对话始于",
-                chatStartedAI: "对话始于 (AI)",
-                archivedAt: "存档于",
-                deleteFromArchive: "删除",
-                confirmDeleteChat: '确定要从存档中删除这个对话 ("{title}") 吗？此操作无法撤销。',
-                confirmClearAll: "确定要永久删除所有已存档的对话吗？此操作无法撤销。",
-                you: "你",
-                ai: "AI",
-                contentUnavailable: "内容不可用",
-                selectChatToView: "请选择一个对话查看详情",
-                continueChat: "继续对话",
-                chatRestored: "对话已恢复到历史记录。请打开侧边栏继续聊天。",
-                errorConfigIncomplete: "API配置不完整，请在设置中检查。",
-                thinking: "思考中...",
-                backToList: "← 返回列表"
-            },
-            en: {
-                archiveTitle: "Archived Chats",
-                loadingArchive: "Loading archives...",
-                clearAllArchives: "Clear All Archives",
-                noArchives: "No archived chats found.",
-                qaPair: "Q&A",
-                chatStarted: "Chat started with",
-                chatStartedAI: "Chat started with (AI)",
-                archivedAt: "Archived at",
-                deleteFromArchive: "Delete",
-                confirmDeleteChat: 'Are you sure you want to delete this chat ("{title}")? This cannot be undone.',
-                confirmClearAll: "Are you sure you want to permanently delete ALL archived chats? This cannot be undone.",
-                you: "You",
-                ai: "AI",
-                contentUnavailable: "Content unavailable",
-                selectChatToView: "Select a chat to view details",
-                continueChat: "Continue Chat",
-                chatRestored: "Chat restored to history. Open sidebar to continue.",
-                backToList: "← Back to List"
-            }
-        };
-
-        function t(key) {
-            return translations[currentLanguage][key] || translations['zh'][key] || key;
-        }
-
-        function updateInterfaceLanguage() {
-            // Only update elements within archive panel
-            const panel = document.getElementById('panel-archive');
-            if (!panel) return;
-            panel.querySelectorAll('[data-i18n-archive]').forEach(el => {
-                const key = el.getAttribute('data-i18n-archive');
-                if (translations[currentLanguage][key]) {
-                    el.textContent = translations[currentLanguage][key];
-                }
-            });
-        }
-
-        // Load language setting
-        const configResult = await chrome.storage.sync.get(['interfaceLanguage']);
-        if (configResult.interfaceLanguage) {
-            currentLanguage = configResult.interfaceLanguage;
-        }
-        updateInterfaceLanguage();
 
 
         function escapeHtml(unsafe) {
@@ -168,11 +100,11 @@
             const firstModelMsg = chat.find(msg => msg.role === 'model' && msg.parts && msg.parts[0] && msg.parts[0].text);
 
             if (chat.length === 2 && firstUserMsg && firstModelMsg) {
-                titleText = `${t('qaPair')}: ${firstUserMsg.parts[0].text.substring(0, 30)}...`;
+                titleText = `问答: ${firstUserMsg.parts[0].text.substring(0, 30)}...`;
             } else if (firstUserMsg) {
-                titleText = `${t('chatStarted')}: ${firstUserMsg.parts[0].text.substring(0, 30)}...`;
+                titleText = `对话始于: ${firstUserMsg.parts[0].text.substring(0, 30)}...`;
             } else if (firstModelMsg) {
-                titleText = `${t('chatStartedAI')}: ${firstModelMsg.parts[0].text.substring(0, 30)}...`;
+                titleText = `对话始于 (AI): ${firstModelMsg.parts[0].text.substring(0, 30)}...`;
             } else if (chat[0] && chat[0].parts && chat[0].parts[0] && chat[0].parts[0].text) {
                 titleText = (chat[0].role === 'user' ? "User: " : "AI: ") + chat[0].parts[0].text.substring(0, 30) + "...";
             }
@@ -198,7 +130,7 @@
             archivedChatsListDiv.innerHTML = '';
 
             if (archivedChats.length === 0) {
-                archivedChatsListDiv.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">${t('noArchives')}</div>`;
+                archivedChatsListDiv.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">没有已存档的对话。</div>`;
                 return;
             }
 
@@ -240,7 +172,7 @@
                 chatDetailContainer.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">💬</div>
-                        <p>${t('selectChatToView')}</p>
+                        <p>请选择一个对话查看详情</p>
                     </div>
                 `;
             }
@@ -250,12 +182,12 @@
         // --- API Logic ---
         async function callApi(userMessageContent, currentChat) {
             if (!currentApiKey || !currentModelName) {
-                alert(t('errorConfigIncomplete') || "API Configuration missing.");
+                alert("API配置不完整，请在设置中检查。");
                 return;
             }
 
             // Add Thinking Message
-            const thinkingMsg = { role: 'model', parts: [{ text: t('thinking') || "Thinking..." }], timestamp: Date.now(), isThinking: true };
+            const thinkingMsg = { role: 'model', parts: [{ text: "思考中..." }], timestamp: Date.now(), isThinking: true };
             currentChat.push(thinkingMsg);
             renderChatDetails(currentChat, currentChat[0].parts[0].text.substring(0, 20)); // Re-render to show thinking
 
@@ -282,6 +214,7 @@
 
             try {
                 let responseText = "";
+                let thinkingText = "";
 
                 if (currentApiType === 'gemini') {
                     endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModelName}:streamGenerateContent?key=${currentApiKey}&alt=sse`;
@@ -300,7 +233,7 @@
 
                     // Remove thinking message
                     currentChat.pop();
-                    const aiMsg = { role: 'model', parts: [{ text: "" }], timestamp: Date.now() };
+                    const aiMsg = { role: 'model', parts: [{ text: "" }], thinkingText: '', timestamp: Date.now() };
                     currentChat.push(aiMsg);
 
                     // Render the chat to create DOM elements, then grab reference to the new message
@@ -321,11 +254,17 @@
                                 try {
                                     const data = JSON.parse(dataStr);
                                     if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
-                                        const text = data.candidates[0].content.parts[0].text;
-                                        responseText += text;
+                                        for (const part of data.candidates[0].content.parts) {
+                                            if (part.thought) {
+                                                thinkingText += part.text || '';
+                                            } else {
+                                                responseText += part.text || '';
+                                            }
+                                        }
                                         aiMsg.parts[0].text = responseText;
+                                        aiMsg.thinkingText = thinkingText;
                                         // Update only the streaming message instead of re-rendering
-                                        updateStreamingArchiveMessage(responseText);
+                                        updateStreamingArchiveMessage(responseText, thinkingText);
                                     }
                                 } catch (e) { /* ignore parse errors */ }
                             }
@@ -353,7 +292,7 @@
 
                     // Remove thinking message
                     currentChat.pop();
-                    const aiMsg = { role: 'model', parts: [{ text: "" }], timestamp: Date.now() };
+                    const aiMsg = { role: 'model', parts: [{ text: "" }], thinkingText: '', timestamp: Date.now() };
                     currentChat.push(aiMsg);
 
                     // Render the chat to create DOM elements, then grab reference to the new message
@@ -373,11 +312,19 @@
                                 if (dataStr === '[DONE]') break;
                                 try {
                                     const data = JSON.parse(dataStr);
-                                    if (data.choices && data.choices[0].delta && data.choices[0].delta.content) {
-                                        const text = data.choices[0].delta.content;
-                                        responseText += text;
+                                    if (data.choices && data.choices[0].delta) {
+                                        const delta = data.choices[0].delta;
+                                        if (delta.reasoning_content) {
+                                            thinkingText += delta.reasoning_content;
+                                        } else if (delta.reasoning) {
+                                            thinkingText += delta.reasoning;
+                                        }
+                                        if (delta.content) {
+                                            responseText += delta.content;
+                                        }
                                         aiMsg.parts[0].text = responseText;
-                                        updateStreamingArchiveMessage(responseText);
+                                        aiMsg.thinkingText = thinkingText;
+                                        updateStreamingArchiveMessage(responseText, thinkingText);
                                     }
                                 } catch (e) { /* ignore */ }
                             }
@@ -386,7 +333,7 @@
                 }
 
                 // Apply markdown formatting to the final message
-                finalizeStreamingArchiveMessage();
+                finalizeStreamingArchiveMessage(thinkingText);
                 saveArchivedChats(); // Save after response
 
             } catch (error) {
@@ -418,13 +365,17 @@
         }
 
         // Efficiently update only the streaming message content
-        function updateStreamingArchiveMessage(text) {
+        function updateStreamingArchiveMessage(text, thinkingText) {
             if (!streamingArchiveMessageElement) return;
 
             const contentWrapper = streamingArchiveMessageElement.querySelector('.message-content');
             if (contentWrapper) {
-                // Use plain text during streaming for performance
-                contentWrapper.textContent = text;
+                let html = '';
+                if (thinkingText) {
+                    html += `<details class="thinking-block" open><summary>💭 思考过程</summary><div class="thinking-content">${thinkingText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</div></details>`;
+                }
+                html += text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+                contentWrapper.innerHTML = html;
 
                 // Auto-scroll if user hasn't manually scrolled
                 const msgContainer = document.querySelector('#panel-archive .chat-detail-view');
@@ -435,14 +386,24 @@
         }
 
         // Apply markdown to the final streamed message
-        function finalizeStreamingArchiveMessage() {
+        function finalizeStreamingArchiveMessage(thinkingText) {
             if (!streamingArchiveMessageElement) return;
 
             const contentWrapper = streamingArchiveMessageElement.querySelector('.message-content');
             if (contentWrapper) {
-                const text = contentWrapper.textContent;
+                // Extract only the response text (not the thinking HTML)
+                const aiMsg = currentChat[currentChat.length - 1];
+                const text = aiMsg ? aiMsg.parts[0].text : '';
+                let html = '';
+                if (thinkingText) {
+                    try {
+                        html += `<details class="thinking-block"><summary>💭 思考过程</summary><div class="thinking-content">${marked.parse(thinkingText)}</div></details>`;
+                    } catch (e) {
+                        html += `<details class="thinking-block"><summary>💭 思考过程</summary><div class="thinking-content">${thinkingText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</div></details>`;
+                    }
+                }
                 try {
-                    contentWrapper.innerHTML = marked.parse(text);
+                    html += marked.parse(text);
                 } catch (e) {
                     console.error("Error parsing final markdown:", e);
                     const escaped = text.replace(/&/g, '&amp;')
@@ -450,8 +411,9 @@
                         .replace(/>/g, '&gt;')
                         .replace(/"/g, '&quot;')
                         .replace(/'/g, '&#039;');
-                    contentWrapper.innerHTML = escaped.replace(/\n/g, '<br>');
+                    html += escaped.replace(/\n/g, '<br>');
                 }
+                contentWrapper.innerHTML = html;
             }
             streamingArchiveMessageElement = null;
             isArchiveUserScrolling = false; // Reset for next stream
@@ -475,7 +437,7 @@
 
             // Back button (返回列表)
             const backBtn = document.createElement('button');
-            backBtn.textContent = t('backToList');
+            backBtn.textContent = '← 返回列表';
             backBtn.classList.add('action-btn', 'back-to-list-btn');
             backBtn.style.marginBottom = '12px';
             backBtn.onclick = () => {
@@ -491,13 +453,13 @@
             titleH2.textContent = titleText;
 
             const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = t('deleteFromArchive');
+            deleteBtn.textContent = '删除';
             deleteBtn.classList.add('action-btn');
             deleteBtn.style.color = '#ef4444';
             deleteBtn.style.borderColor = '#ef4444';
 
             deleteBtn.onclick = () => {
-                if (confirm(t('confirmDeleteChat').replace('{title}', titleText))) {
+                if (confirm(`确定要从存档中删除这个对话 ("${titleText}") 吗？此操作无法撤销。`)) {
                     const originalIndex = archivedChats.findIndex(originalChat => originalChat === chat);
                     if (originalIndex !== -1) {
                         archivedChats.splice(originalIndex, 1);
@@ -520,7 +482,7 @@
                 const messageDiv = document.createElement('div');
                 messageDiv.classList.add('message', msg.role === 'user' ? 'user-message' : 'ai-message');
 
-                const roleLabel = msg.role === 'user' ? t('you') : t('ai');
+                const roleLabel = msg.role === 'user' ? '你' : 'AI';
                 const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                 const msgHeader = document.createElement('div');
@@ -549,14 +511,24 @@
                 };
                 msgHeader.appendChild(copyBtn);
 
-                let contentHtml = t('contentUnavailable');
+                let contentHtml = '内容不可用';
                 if (msg.parts && msg.parts[0] && typeof msg.parts[0].text === 'string') {
+                    // Render thinking block if present
+                    if (msg.role === 'model' && msg.thinkingText) {
+                        try {
+                            contentHtml = `<details class="thinking-block"><summary>💭 思考过程</summary><div class="thinking-content">${marked.parse(msg.thinkingText)}</div></details>`;
+                        } catch (e) {
+                            contentHtml = `<details class="thinking-block"><summary>💭 思考过程</summary><div class="thinking-content">${escapeHtml(msg.thinkingText).replace(/\n/g, '<br>')}</div></details>`;
+                        }
+                    } else {
+                        contentHtml = '';
+                    }
                     // Use marked to render Markdown
                     try {
-                        contentHtml = marked.parse(msg.parts[0].text);
+                        contentHtml += marked.parse(msg.parts[0].text);
                     } catch (e) {
                         console.error("Markdown parse error:", e);
-                        contentHtml = escapeHtml(msg.parts[0].text).replace(/\n/g, '<br>');
+                        contentHtml += escapeHtml(msg.parts[0].text).replace(/\n/g, '<br>');
                     }
                 }
 
@@ -596,7 +568,7 @@
 
         if (clearAllArchivedButton) {
             clearAllArchivedButton.addEventListener('click', () => {
-                if (confirm(t('confirmClearAll'))) {
+                if (confirm("确定要永久删除所有已存档的对话吗？此操作无法撤销。")) {
                     archivedChats = [];
                     saveArchivedChats();
                     renderArchivedChatsList();
@@ -612,12 +584,6 @@
                 if (archivedChats.length === 0) {
                     showListView();
                 }
-            }
-            if (namespace === 'sync' && changes.interfaceLanguage) {
-                currentLanguage = changes.interfaceLanguage.newValue || 'zh';
-                updateInterfaceLanguage();
-                renderArchivedChatsList();
-                showListView();
             }
         });
 

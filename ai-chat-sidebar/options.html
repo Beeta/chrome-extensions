@@ -900,6 +900,58 @@
       padding-left: 20px;
       line-height: 1.8;
     }
+
+    /* Thinking Block (model reasoning/thinking) */
+    .thinking-block {
+      margin-bottom: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      overflow: hidden;
+    }
+
+    .thinking-block summary {
+      padding: 8px 12px;
+      background: var(--code-bg);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+      user-select: none;
+      list-style: none;
+    }
+
+    .thinking-block summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .thinking-block summary::before {
+      content: '▶ ';
+      font-size: 10px;
+      display: inline-block;
+      transition: transform 0.2s;
+    }
+
+    .thinking-block[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    .thinking-content {
+      padding: 10px 12px;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: var(--secondary-text-color);
+      border-top: 1px solid var(--border-color);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .thinking-content p {
+      margin: 4px 0;
+    }
+
+    .thinking-content code {
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -923,56 +975,44 @@
 
       <!-- ===== 设置面板 ===== -->
       <div class="tab-panel" id="panel-settings">
-        <h1 data-i18n="optionsTitle">API 配置管理</h1>
-
-        <div class="general-settings">
-          <h2 data-i18n="generalSettingsTitle">通用设置</h2>
-          <div class="form-group">
-            <label for="languageSelect" data-i18n="languageLabel">界面语言 / Interface Language:</label>
-            <select id="languageSelect">
-              <option value="zh">中文 (Chinese)</option>
-              <option value="en">English</option>
-            </select>
-          </div>
-          <button id="saveGeneralSettingsButton" data-i18n="saveGeneralSettings">保存通用设置</button>
-        </div>
+        <h1>API 配置管理</h1>
 
         <div class="config-form" id="configFormContainer">
-          <h2 data-i18n="addEditConfigTitle">添加/编辑配置</h2>
+          <h2>添加/编辑配置</h2>
           <input type="hidden" id="configId">
           <div class="form-group">
-            <label for="configName" data-i18n="configNameLabel">配置名称:</label>
+            <label for="configName">配置名称:</label>
             <input type="text" id="configName" placeholder="例如：我的 Gemini 主力">
           </div>
           <div class="form-group">
-            <label for="apiKey" data-i18n="apiKeyLabel">API 密钥:</label>
+            <label for="apiKey">API 密钥:</label>
             <input type="password" id="apiKey" placeholder="粘贴您的 API 密钥">
           </div>
           <div class="form-group">
-            <label for="apiType" data-i18n="apiTypeLabel">API 类型:</label>
+            <label for="apiType">API 类型:</label>
             <select id="apiType">
               <option value="gemini">Google Gemini</option>
               <option value="openai">OpenAI 兼容 API</option>
             </select>
           </div>
           <div class="form-group hidden" id="apiEndpointGroup">
-            <label for="apiEndpoint" data-i18n="apiEndpointLabel">API Endpoint URL:</label>
+            <label for="apiEndpoint">API Endpoint URL:</label>
             <input type="url" id="apiEndpoint" placeholder="例如: https://api.openai.com/v1/chat/completions">
           </div>
           <div class="form-group">
-            <label for="modelName" data-i18n="modelNameLabel">模型名称:</label>
+            <label for="modelName">模型名称:</label>
             <input type="text" id="modelName" placeholder="例如: gemini-1.5-flash-latest 或 gpt-4o">
           </div>
-          <button id="saveConfigButton" data-i18n="saveConfig">保存配置</button>
-          <button type="button" id="testConfigButton" data-i18n="testConfig">测试连接</button>
-          <button type="button" id="clearFormButton" data-i18n="clearForm">清空表单</button>
-          <button type="button" id="cancelEditButton" class="hidden" data-i18n="cancelEdit">取消编辑</button>
+          <button id="saveConfigButton">保存配置</button>
+          <button type="button" id="testConfigButton">测试连接</button>
+          <button type="button" id="clearFormButton">清空表单</button>
+          <button type="button" id="cancelEditButton" class="hidden">取消编辑</button>
         </div>
 
         <div class="config-list">
-          <h2 data-i18n="savedConfigsTitle">已保存的配置</h2>
+          <h2>已保存的配置</h2>
           <div id="configurationsList">
-            <p data-i18n="noConfigs">暂无配置。请添加一个新配置。</p>
+            <p>暂无配置。请添加一个新配置。</p>
           </div>
         </div>
 

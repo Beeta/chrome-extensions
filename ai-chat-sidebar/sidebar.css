@@ -970,3 +970,57 @@ body {
   background: var(--glass-bg);
   font-weight: 600;
 }
+
+/* ========================================
+   Thinking Block (model reasoning/thinking)
+   ======================================== */
+.thinking-block {
+  margin-bottom: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.thinking-block summary {
+  padding: 8px 12px;
+  background: var(--glass-bg);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--secondary-text-color);
+  user-select: none;
+  list-style: none;
+}
+
+.thinking-block summary::-webkit-details-marker {
+  display: none;
+}
+
+.thinking-block summary::before {
+  content: '▶ ';
+  font-size: 10px;
+  display: inline-block;
+  transition: transform 0.2s;
+}
+
+.thinking-block[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.thinking-content {
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--secondary-text-color);
+  border-top: 1px solid var(--border-color);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.thinking-content p {
+  margin: 4px 0;
+}
+
+.thinking-content code {
+  font-size: 12px;
+}
