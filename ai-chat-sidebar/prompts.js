@@ -13,101 +13,20 @@
         const backToSidebarButton = document.getElementById('backToSidebarButton');
 
         let prompts = [];
-        let currentLanguage = 'zh';
-
-        const translations = {
-            zh: {
-                promptsTitle: "管理 Prompt 模板",
-                backToSidebar: "返回侧边栏",
-                addEditTitle: "添加/编辑模板",
-                promptNameLabel: "模板名称:",
-                promptNamePlaceholder: "例如：翻译成英文",
-                promptContentLabel: "模板内容 (使用 {{text}} 作为选中文本的占位符):",
-                promptContentPlaceholder: "例如：请将以下文本翻译成英文：\\n\\n{{text}}",
-                savePrompt: "保存模板",
-                clearForm: "清空表单",
-                usageNoteTitle: "使用说明:",
-                usageNoteText: "在模板内容中使用 {{text}} 作为占位符。当您在侧边栏点击模板快捷方式时：",
-                usageNoteList1: "如果当前有选中的网页文本，{{text}} 将被替换为该文本。",
-                usageNoteList2: "如果没有选中的文本，{{text}} 将被原样保留或根据您的输入进行处理。",
-                noTemplates: "还没有模板，请添加一个。",
-                presetTag: "预设",
-                edit: "编辑",
-                delete: "删除",
-                confirmDelete: "确定要删除这个模板吗？",
-                errorEmpty: "模板名称和内容不能为空。",
-                presetTranslateName: "翻译",
-                presetTranslateContent: "请将以下文本翻译成[在此处填写目标语言，例如：英文]：\n\n{{text}}",
-                presetSummarizeName: "总结",
-                presetSummarizeContent: "请总结以下文本的主要内容：\n\n{{text}}"
-            },
-            en: {
-                promptsTitle: "Manage Prompt Templates",
-                backToSidebar: "Back to Sidebar",
-                addEditTitle: "Add/Edit Template",
-                promptNameLabel: "Template Name:",
-                promptNamePlaceholder: "E.g. Translate to English",
-                promptContentLabel: "Content (Use {{text}} as placeholder):",
-                promptContentPlaceholder: "E.g. Please translate the following to English:\\n\\n{{text}}",
-                savePrompt: "Save Template",
-                clearForm: "Clear Form",
-                usageNoteTitle: "Usage:",
-                usageNoteText: "Use {{text}} as a placeholder. When clicking a shortcut:",
-                usageNoteList1: "If text is selected on the page, {{text}} is replaced by it.",
-                usageNoteList2: "If no text is selected, {{text}} remains for you to fill.",
-                noTemplates: "No templates yet. Please add one.",
-                presetTag: "Preset",
-                edit: "Edit",
-                delete: "Delete",
-                confirmDelete: "Are you sure you want to delete this template?",
-                errorEmpty: "Name and content cannot be empty.",
-                presetTranslateName: "Translate",
-                presetTranslateContent: "Please translate the following text to [Target Language, e.g. Chinese]:\n\n{{text}}",
-                presetSummarizeName: "Summarize",
-                presetSummarizeContent: "Please summarize the key points of the following text:\n\n{{text}}"
-            }
-        };
-
-        function t(key) {
-            return translations[currentLanguage][key] || translations['zh'][key] || key;
-        }
-
-        function updateInterfaceLanguage() {
-            // Only update elements within prompts panel to avoid conflicts
-            const panel = document.getElementById('panel-prompts');
-            if (panel) {
-                panel.querySelectorAll('[data-i18n-prompts]').forEach(el => {
-                    const key = el.getAttribute('data-i18n-prompts');
-                    if (translations[currentLanguage][key]) {
-                        el.innerHTML = translations[currentLanguage][key]; // Use innerHTML to support <code> tags in notes
-                    }
-                });
-            }
-            if (promptNameInput) promptNameInput.placeholder = t('promptNamePlaceholder');
-            if (promptContentInput) promptContentInput.placeholder = t('promptContentPlaceholder');
-            renderPrompts(); // Re-render list to translate "Preset", "Edit", "Delete" buttons
-        }
-
-        // Load Language
-        const configResult = await chrome.storage.sync.get(['interfaceLanguage']);
-        if (configResult.interfaceLanguage) {
-            currentLanguage = configResult.interfaceLanguage;
-        }
-        updateInterfaceLanguage();
 
 
         function getPresetPrompts() {
             return [
                 {
                     id: 'preset-translate',
-                    name: t('presetTranslateName'),
-                    content: t('presetTranslateContent'),
+                    name: '翻译',
+                    content: '请将以下文本翻译成[在此处填写目标语言，例如：英文]：\n\n{{text}}',
                     isPreset: true
                 },
                 {
                     id: 'preset-summarize',
-                    name: t('presetSummarizeName'),
-                    content: t('presetSummarizeContent'),
+                    name: '总结',
+                    content: '请总结以下文本的主要内容：\n\n{{text}}',
                     isPreset: true
                 }
             ];
@@ -174,7 +93,7 @@
         function renderPrompts() {
             promptListDiv.innerHTML = '';
             if (prompts.length === 0) {
-                promptListDiv.innerHTML = `<p>${t('noTemplates')}</p>`;
+                promptListDiv.innerHTML = `<p>还没有模板，请添加一个。</p>`;
                 return;
             }
 
@@ -192,7 +111,7 @@
                 if (prompt.isPreset) {
                     const presetTag = document.createElement('span');
                     presetTag.classList.add('preset-tag');
-                    presetTag.textContent = t('presetTag');
+                    presetTag.textContent = '预设';
                     nameSpan.appendChild(presetTag);
                 }
                 headerDiv.appendChild(nameSpan);
@@ -202,14 +121,14 @@
 
                 const editButton = document.createElement('button');
                 editButton.classList.add('edit-button');
-                editButton.textContent = t('edit');
+                editButton.textContent = '编辑';
                 editButton.addEventListener('click', () => loadPromptForEditing(prompt.id));
                 actionsDiv.appendChild(editButton);
 
                 if (!prompt.isPreset) {
                     const deleteButton = document.createElement('button');
                     deleteButton.classList.add('delete-button');
-                    deleteButton.textContent = t('delete');
+                    deleteButton.textContent = '删除';
                     deleteButton.addEventListener('click', () => deletePrompt(prompt.id));
                     actionsDiv.appendChild(deleteButton);
                 }
@@ -246,7 +165,7 @@
         }
 
         async function deletePrompt(id) {
-            if (confirm(t('confirmDelete'))) {
+            if (confirm("确定要删除这个模板吗？")) {
                 prompts = prompts.filter(p => p.id !== id);
                 await savePrompts();
                 renderPrompts();
@@ -260,7 +179,7 @@
             const content = promptContentInput.value.trim();
 
             if (!name || !content) {
-                alert(t('errorEmpty'));
+                alert("模板名称和内容不能为空。");
                 return;
             }
 
@@ -297,15 +216,6 @@
                 });
             });
         }
-
-        // Listener for language change while page is open
-        chrome.storage.onChanged.addListener((changes, namespace) => {
-            if (namespace === 'sync' && changes.interfaceLanguage) {
-                currentLanguage = changes.interfaceLanguage.newValue || 'zh';
-                updateInterfaceLanguage();
-                loadPrompts(); // Reload to update presets
-            }
-        });
 
         loadPrompts();
     }

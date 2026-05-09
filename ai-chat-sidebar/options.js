@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const modelNameInput = document.getElementById('modelName');
 
   const saveConfigButton = document.getElementById('saveConfigButton');
-  const testConfigButton = document.getElementById('testConfigButton'); // New Button
+  const testConfigButton = document.getElementById('testConfigButton');
   const clearFormButton = document.getElementById('clearFormButton');
   const cancelEditButton = document.getElementById('cancelEditButton');
 
@@ -18,139 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const apiEndpointGroup = document.getElementById('apiEndpointGroup');
 
-  // Language elements
-  const languageSelect = document.getElementById('languageSelect');
-  const saveGeneralSettingsButton = document.getElementById('saveGeneralSettingsButton');
-
   let configurations = [];
   let activeConfigurationId = null;
-  let currentLanguage = 'zh'; // Default
-
-  const translations = {
-    zh: {
-      optionsTitle: "API 配置管理",
-      generalSettingsTitle: "通用设置",
-      languageLabel: "界面语言 / Interface Language:",
-      saveGeneralSettings: "保存通用设置",
-      addEditConfigTitle: "添加/编辑配置",
-      configNameLabel: "配置名称:",
-      apiKeyLabel: "API 密钥:",
-      apiTypeLabel: "API 类型:",
-      apiEndpointLabel: "API Endpoint URL:",
-      modelNameLabel: "模型名称:",
-      saveConfig: "保存配置",
-      updateConfig: "更新配置",
-      testConfig: "测试连接", // New translation
-      clearForm: "清空表单",
-      cancelEdit: "取消编辑",
-      savedConfigsTitle: "已保存的配置",
-      noConfigs: "暂无配置。请使用上面的表单添加一个新配置。",
-
-      // Placeholders & Values
-      configNamePlaceholder: "例如：我的 Gemini 主力 (留空将自动生成)",
-      apiKeyPlaceholder: "粘贴您的 API 密钥",
-      apiEndpointPlaceholder: "例如: https://api.openai.com/v1/chat/completions",
-      modelNamePlaceholder: "例如: gemini-1.5-flash-latest 或 gpt-4o",
-
-      // Status Messages
-      statusSaved: "配置保存成功！",
-      statusError: "错误: 保存配置失败。",
-      generalSettingsSaved: "通用设置已保存，请重新打开侧边栏以生效。",
-      generalSettingsError: "保存失败: ",
-      valConfigName: "API密钥和模型名称不能为空。",
-      valApiEndpoint: "OpenAI 兼容 API 需要填写 Endpoint URL。",
-      confirmDelete: '确定要删除配置 "{name}" 吗？',
-      testing: "正在测试连接...", // New translation
-      testSuccess: "连接成功！API 返回正常。", // New translation
-      testFail: "连接失败: ", // New translation
-
-      // Render Items
-      currentActive: "(当前活动)",
-      type: "类型",
-      model: "模型",
-      setActive: "设为活动",
-      edit: "编辑",
-      delete: "删除"
-    },
-    en: {
-      optionsTitle: "API Configuration",
-      generalSettingsTitle: "General Settings",
-      languageLabel: "Interface Language:",
-      saveGeneralSettings: "Save General Settings",
-      addEditConfigTitle: "Add/Edit Configuration",
-      configNameLabel: "Config Name:",
-      apiKeyLabel: "API Key:",
-      apiTypeLabel: "API Type:",
-      apiEndpointLabel: "API Endpoint URL:",
-      modelNameLabel: "Model Name:",
-      saveConfig: "Save Configuration",
-      updateConfig: "Update Configuration",
-      testConfig: "Test Connection", // New translation
-      clearForm: "Clear Form",
-      cancelEdit: "Cancel Edit",
-      savedConfigsTitle: "Saved Configurations",
-      noConfigs: "No configurations. Please add one above.",
-
-      // Placeholders & Values
-      configNamePlaceholder: "E.g., My Main Gemini (Leave empty to auto-generate)",
-      apiKeyPlaceholder: "Paste your API Key here",
-      apiEndpointPlaceholder: "E.g., https://api.openai.com/v1/chat/completions",
-      modelNamePlaceholder: "E.g., gemini-1.5-flash-latest or gpt-4o",
-
-      // Status Messages
-      statusSaved: "Configuration saved successfully!",
-      statusError: "Error: Failed to save configuration.",
-      generalSettingsSaved: "General settings saved. Please reopen sidebar to apply.",
-      generalSettingsError: "Failed to save: ",
-      valConfigName: "API Key and Model Name are required.",
-      valApiEndpoint: "Endpoint URL is required for OpenAI-compatible APIs.",
-      confirmDelete: 'Are you sure you want to delete config "{name}"?',
-      testing: "Testing connection...", // New translation
-      testSuccess: "Connection successful! API responded.", // New translation
-      testFail: "Connection failed: ", // New translation
-
-      // Render Items
-      currentActive: "(Active)",
-      type: "Type",
-      model: "Model",
-      setActive: "Set Active",
-      edit: "Edit",
-      delete: "Delete"
-    }
-  };
-
-  function t(key) {
-    return translations[currentLanguage][key] || translations['zh'][key] || key;
-  }
-
-  function updateInterfaceLanguage() {
-    // Only update elements within the settings panel to avoid conflicts with other modules
-    const settingsPanel = document.getElementById('panel-settings');
-    const scope = settingsPanel || document;
-    scope.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.getAttribute('data-i18n');
-      if (translations[currentLanguage][key]) {
-        el.textContent = translations[currentLanguage][key];
-      }
-    });
-    document.title = t('optionsTitle');
-
-    // Update placeholders
-    if (configNameInput) configNameInput.placeholder = t('configNamePlaceholder');
-    if (apiKeyInput) apiKeyInput.placeholder = t('apiKeyPlaceholder');
-    if (apiEndpointInput) apiEndpointInput.placeholder = t('apiEndpointPlaceholder');
-    if (modelNameInput) modelNameInput.placeholder = t('modelNamePlaceholder');
-
-    // Update dynamic button text based on state (Save vs Update)
-    if (configIdInput && configIdInput.value) {
-        saveConfigButton.textContent = t('updateConfig');
-    } else {
-        saveConfigButton.textContent = t('saveConfig');
-    }
-
-    // Re-render list to update item texts
-    renderConfigurations();
-  }
 
   function generateId() {
     return `config_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -161,27 +30,17 @@ document.addEventListener('DOMContentLoaded', function() {
       apiEndpointGroup.classList.remove('hidden');
     } else {
       apiEndpointGroup.classList.add('hidden');
-      apiEndpointInput.value = ''; // Clear if not applicable
+      apiEndpointInput.value = '';
     }
   }
 
   apiTypeSelect.addEventListener('change', toggleApiEndpointField);
 
   async function loadConfigurations() {
-    const result = await chrome.storage.sync.get(['apiConfigurations', 'activeConfigurationId', 'interfaceLanguage']);
+    const result = await chrome.storage.sync.get(['apiConfigurations', 'activeConfigurationId']);
     configurations = result.apiConfigurations || [];
     activeConfigurationId = result.activeConfigurationId || null;
-
-    // Load language setting
-    if (result.interfaceLanguage) {
-      languageSelect.value = result.interfaceLanguage;
-      currentLanguage = result.interfaceLanguage;
-    } else {
-      languageSelect.value = 'zh'; // Default
-      currentLanguage = 'zh';
-    }
-
-    updateInterfaceLanguage(); // Apply translations immediately
+    renderConfigurations();
   }
 
   async function saveConfigurations() {
@@ -190,31 +49,16 @@ document.addEventListener('DOMContentLoaded', function() {
         apiConfigurations: configurations,
         activeConfigurationId: activeConfigurationId
       });
-      showStatus(t('statusSaved'), 'green');
+      showStatus('配置保存成功！', 'green');
     } catch (e) {
-      showStatus(t('statusError') + ' ' + e.message, 'red');
+      showStatus('错误: 保存配置失败。 ' + e.message, 'red');
       console.error("Error saving configurations:", e);
     }
   }
 
-  // Save General Settings (Language)
-  saveGeneralSettingsButton.addEventListener('click', async () => {
-    try {
-      currentLanguage = languageSelect.value; // Update local state immediately
-      await chrome.storage.sync.set({
-        interfaceLanguage: currentLanguage
-      });
-      updateInterfaceLanguage(); // Apply changes to UI
-      showStatus(t('generalSettingsSaved'), 'green');
-    } catch (e) {
-      showStatus(t('generalSettingsError') + e.message, 'red');
-    }
-  });
-
   function showStatus(text, color) {
     statusDiv.textContent = text;
     statusDiv.style.color = color;
-    // Clear status after a few seconds, unless it's a "Testing..." message which might need to persist until done
     if (!text.includes("...")) {
         setTimeout(() => { statusDiv.textContent = ''; }, 4000);
     }
@@ -223,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function renderConfigurations() {
     configurationsListDiv.innerHTML = '';
     if (configurations.length === 0) {
-      configurationsListDiv.innerHTML = `<p>${t('noConfigs')}</p>`;
+      configurationsListDiv.innerHTML = '<p>暂无配置。请使用上面的表单添加一个新配置。</p>';
       return;
     }
 
@@ -237,8 +81,8 @@ document.addEventListener('DOMContentLoaded', function() {
       const detailsDiv = document.createElement('div');
       detailsDiv.classList.add('config-details');
       detailsDiv.innerHTML = `
-        <strong>${escapeHtml(config.configName)}</strong> ${config.id === activeConfigurationId ? t('currentActive') : ''}<br>
-        <small>${t('type')}: ${escapeHtml(config.apiType)} | ${t('model')}: ${escapeHtml(config.modelName)}</small>
+        <strong>${escapeHtml(config.configName)}</strong> ${config.id === activeConfigurationId ? '(当前活动)' : ''}<br>
+        <small>类型: ${escapeHtml(config.apiType)} | 模型: ${escapeHtml(config.modelName)}</small>
       `;
       itemDiv.appendChild(detailsDiv);
 
@@ -246,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
       actionsDiv.classList.add('config-actions');
 
       const setActiveButton = document.createElement('button');
-      setActiveButton.textContent = t('setActive');
+      setActiveButton.textContent = '设为活动';
       setActiveButton.classList.add('set-active-btn');
       if (config.id === activeConfigurationId) {
         setActiveButton.disabled = true;
@@ -255,27 +99,27 @@ document.addEventListener('DOMContentLoaded', function() {
       setActiveButton.addEventListener('click', async () => {
         activeConfigurationId = config.id;
         await saveConfigurations();
-        renderConfigurations(); // Re-render to update active status
+        renderConfigurations();
       });
       actionsDiv.appendChild(setActiveButton);
 
       const editButton = document.createElement('button');
-      editButton.textContent = t('edit');
+      editButton.textContent = '编辑';
       editButton.classList.add('edit-btn');
       editButton.addEventListener('click', () => populateFormForEdit(config));
       actionsDiv.appendChild(editButton);
 
       const deleteButton = document.createElement('button');
-      deleteButton.textContent = t('delete');
+      deleteButton.textContent = '删除';
       deleteButton.classList.add('delete-btn');
       deleteButton.addEventListener('click', async () => {
-        if (confirm(t('confirmDelete').replace('{name}', escapeHtml(config.configName)))) {
+        if (confirm(`确定要删除配置 "${escapeHtml(config.configName)}" 吗？`)) {
           configurations = configurations.filter(c => c.id !== config.id);
           if (activeConfigurationId === config.id) {
             activeConfigurationId = configurations.length > 0 ? configurations[0].id : null;
           }
           await saveConfigurations();
-          loadConfigurations(); // Reload and re-render
+          loadConfigurations();
         }
       });
       actionsDiv.appendChild(deleteButton);
@@ -294,8 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
     modelNameInput.value = config.modelName;
     toggleApiEndpointField();
 
-    saveConfigButton.textContent = t('updateConfig');
-
+    saveConfigButton.textContent = '更新配置';
     cancelEditButton.classList.remove('hidden');
     document.getElementById('configFormContainer').scrollIntoView({ behavior: 'smooth' });
   }
@@ -304,13 +147,12 @@ document.addEventListener('DOMContentLoaded', function() {
     configIdInput.value = '';
     configNameInput.value = '';
     apiKeyInput.value = '';
-    apiTypeSelect.value = 'gemini'; // Default
+    apiTypeSelect.value = 'gemini';
     apiEndpointInput.value = '';
     modelNameInput.value = '';
     toggleApiEndpointField();
 
-    saveConfigButton.textContent = t('saveConfig');
-
+    saveConfigButton.textContent = '保存配置';
     cancelEditButton.classList.add('hidden');
     configNameInput.focus();
   }
@@ -318,7 +160,6 @@ document.addEventListener('DOMContentLoaded', function() {
   clearFormButton.addEventListener('click', clearForm);
   cancelEditButton.addEventListener('click', clearForm);
 
-  // --- New Test Logic ---
   testConfigButton.addEventListener('click', async () => {
     const apiKey = apiKeyInput.value.trim();
     const apiType = apiTypeSelect.value;
@@ -326,15 +167,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const modelName = modelNameInput.value.trim();
 
     if (!apiKey || !modelName) {
-      showStatus(t('valConfigName'), 'red');
+      showStatus('API密钥和模型名称不能为空。', 'red');
       return;
     }
     if (apiType === 'openai' && !apiEndpoint) {
-      showStatus(t('valApiEndpoint'), 'red');
+      showStatus('OpenAI 兼容 API 需要填写 Endpoint URL。', 'red');
       return;
     }
 
-    showStatus(t('testing'), 'blue');
+    showStatus('正在测试连接...', 'blue');
 
     try {
         let response;
@@ -364,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (response.ok) {
-            showStatus(t('testSuccess'), 'green');
+            showStatus('连接成功！API 返回正常。', 'green');
         } else {
             const errorText = await response.text();
             let errorMsg = errorText;
@@ -372,10 +213,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const errorJson = JSON.parse(errorText);
                 errorMsg = errorJson.error?.message || errorJson.error || errorText;
             } catch(e) {}
-            showStatus(t('testFail') + ` (${response.status}) ` + errorMsg.substring(0, 100), 'red');
+            showStatus(`连接失败: (${response.status}) ` + errorMsg.substring(0, 100), 'red');
         }
     } catch (error) {
-        showStatus(t('testFail') + error.message, 'red');
+        showStatus('连接失败: ' + error.message, 'red');
     }
   });
 
@@ -388,15 +229,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const modelName = modelNameInput.value.trim();
 
     if (!apiKey || !modelName) {
-      showStatus(t('valConfigName'), 'red');
+      showStatus('API密钥和模型名称不能为空。', 'red');
       return;
     }
     if (apiType === 'openai' && !apiEndpoint) {
-      showStatus(t('valApiEndpoint'), 'red');
+      showStatus('OpenAI 兼容 API 需要填写 Endpoint URL。', 'red');
       return;
     }
 
-    // Auto-generate config name if empty
     if (!configName) {
         configName = "Config " + new Date().toLocaleString();
     }
@@ -412,9 +252,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const existingIndex = configurations.findIndex(c => c.id === newConfig.id);
     if (existingIndex > -1) {
-      configurations[existingIndex] = newConfig; // Update existing
+      configurations[existingIndex] = newConfig;
     } else {
-      configurations.push(newConfig); // Add new
+      configurations.push(newConfig);
     }
 
     if (configurations.length === 1 || newConfig.id === activeConfigurationId || !activeConfigurationId) {
@@ -436,7 +276,6 @@ document.addEventListener('DOMContentLoaded', function() {
          .replace(/'/g, "&#039;");
   }
 
-  // Initial load
   loadConfigurations();
   toggleApiEndpointField();
 });

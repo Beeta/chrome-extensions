@@ -1,14 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "__MSG_appName__",
-  "description": "__MSG_appDesc__",
-  "default_locale": "zh_CN",
+  "name": "智能侧边栏 AI",
+  "description": "将 LLM 能力集成进浏览器侧边栏，支持 Gemini / OpenAI 兼容接口",
   "version": "1.3.0",
   "permissions": [
     "activeTab",
     "scripting",
     "storage",
-    "contextMenus",
     "sidePanel",
     "tabs"
   ],
