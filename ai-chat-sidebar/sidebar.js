@@ -147,6 +147,13 @@ async function initialize() {
         });
     }
 
+    const addPromptButton = document.getElementById('addPromptButton');
+    if (addPromptButton) {
+        addPromptButton.addEventListener('click', () => {
+            chrome.tabs.create({ url: chrome.runtime.getURL('options.html#prompts') });
+        });
+    }
+
     // New Toggle Logic
     if (toggleMoreActionsButton && moreActionsMenu) {
         toggleMoreActionsButton.addEventListener('click', () => {
@@ -268,14 +275,38 @@ function renderPromptShortcuts() {
 
 function applyPromptTemplate(template) {
     let content = template.content;
+
     if (currentSelectedText && content.includes("{{text}}")) {
         content = content.replace(/{{text}}/g, currentSelectedText);
-        // Clear the selected text preview because it has been consumed by the prompt
         clearSelectedTextPreview();
+        chatInput.value = content;
+        chatInput.focus();
+        chatInput.scrollTop = chatInput.scrollHeight;
+    } else if (content.includes("{{text}}")) {
+        chatInput.value = '正在提取页面内容...';
+        chatInput.disabled = true;
+        pendingPageExtractCallback = (pageContent) => {
+            if (pageContent) {
+                chatInput.value = content.replace(/{{text}}/g, pageContent);
+            } else {
+                chatInput.value = content;
+            }
+            chatInput.disabled = false;
+            chatInput.focus();
+            chatInput.scrollTop = chatInput.scrollHeight;
+        };
+        chrome.runtime.sendMessage({ action: "extractActiveTabContent" }, (response) => {
+            if (chrome.runtime.lastError || (response && response.success === false)) {
+                const cb = pendingPageExtractCallback;
+                pendingPageExtractCallback = null;
+                if (cb) cb(null);
+            }
+        });
+    } else {
+        chatInput.value = content;
+        chatInput.focus();
+        chatInput.scrollTop = chatInput.scrollHeight;
     }
-    chatInput.value = content;
-    chatInput.focus();
-    chatInput.scrollTop = chatInput.scrollHeight;
 }
 
 function updateArchivedChatsButtonCount() {

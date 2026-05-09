@@ -67,10 +67,6 @@
       <button id="viewArchivedChatsButton">查看已存档对话</button>
       <button id="managePromptsButton">管理 Prompt</button>
     </div>
-    <div class="prompt-shortcuts-container" style="display: none;">
-      <h4>Prompt 快捷方式:</h4>
-      <div id="promptShortcuts" class="prompt-shortcuts"></div>
-    </div>
 
     <!-- History Panel -->
     <div id="historyPanel" class="history-panel" style="display:none;">
@@ -115,6 +111,10 @@
             <span id="selectedTextContent" class="selected-text-content"></span>
           </div>
           <button id="clearSelectedTextButton" class="selected-text-close" title="清除">×</button>
+        </div>
+        <div id="promptShortcutsBar" class="prompt-shortcuts-bar">
+          <div id="promptShortcuts" class="prompt-shortcuts-scroll"></div>
+          <button id="addPromptButton" class="prompt-shortcut-add" title="管理 Prompt 模板">+</button>
         </div>
         <textarea id="chatInput" placeholder="有问题，尽管问"></textarea>
         <div class="send-area-container">
