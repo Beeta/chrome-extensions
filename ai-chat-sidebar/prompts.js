@@ -15,78 +15,13 @@
         let prompts = [];
 
 
-        function getPresetPrompts() {
-            return [
-                {
-                    id: 'preset-translate',
-                    name: '翻译',
-                    content: '请将以下文本翻译成[在此处填写目标语言，例如：英文]：\n\n{{text}}',
-                    isPreset: true
-                },
-                {
-                    id: 'preset-summarize',
-                    name: '总结',
-                    content: '请总结以下文本的主要内容：\n\n{{text}}',
-                    isPreset: true
-                }
-            ];
-        }
-
         async function loadPrompts() {
             const result = await chrome.storage.local.get(['promptTemplates']);
             prompts = result.promptTemplates ? [...result.promptTemplates] : [];
-
-            // Define presets based on CURRENT language.
-            const presetsDefinition = getPresetPrompts();
-
-            let madeChangesToStoredStructure = false;
-
-            // 1. Update existing presets to match current language definitions
-            prompts.forEach(p => {
-                if (p.isPreset) {
-                    const freshDef = presetsDefinition.find(def => def.id === p.id);
-                    if (freshDef) {
-                        // Overwrite name and content to ensure language switch takes effect for presets
-                        if (p.name !== freshDef.name || p.content !== freshDef.content) {
-                            p.name = freshDef.name;
-                            p.content = freshDef.content;
-                            madeChangesToStoredStructure = true;
-                        }
-                    }
-                }
-            });
-
-            // 2. Add any missing presets
-            presetsDefinition.forEach(definedPreset => {
-                const existingPromptIndex = prompts.findIndex(p => p.id === definedPreset.id);
-                if (existingPromptIndex === -1) {
-                    prompts.unshift({ ...definedPreset });
-                    madeChangesToStoredStructure = true;
-                }
-            });
-
-            // 3. Fix any flags (ensure custom prompts are not flagged as presets)
-            prompts.forEach(p => {
-                const isActuallyPreset = presetsDefinition.some(dp => dp.id === p.id);
-                if (!isActuallyPreset && p.isPreset !== false) {
-                    p.isPreset = false;
-                    madeChangesToStoredStructure = true;
-                }
-            });
-
-            if (!result.promptTemplates || madeChangesToStoredStructure) {
-                await savePrompts();
-            }
-
             renderPrompts();
         }
 
         async function savePrompts() {
-            prompts.sort((a, b) => {
-                if (a.isPreset && !b.isPreset) return -1;
-                if (!a.isPreset && b.isPreset) return 1;
-                return 0;
-            });
             await chrome.storage.local.set({ promptTemplates: prompts });
         }
 
@@ -108,12 +43,6 @@
                 const nameSpan = document.createElement('span');
                 nameSpan.classList.add('prompt-item-name');
                 nameSpan.textContent = prompt.name;
-                if (prompt.isPreset) {
-                    const presetTag = document.createElement('span');
-                    presetTag.classList.add('preset-tag');
-                    presetTag.textContent = '预设';
-                    nameSpan.appendChild(presetTag);
-                }
                 headerDiv.appendChild(nameSpan);
 
                 const actionsDiv = document.createElement('div');
@@ -125,13 +54,11 @@
                 editButton.addEventListener('click', () => loadPromptForEditing(prompt.id));
                 actionsDiv.appendChild(editButton);
 
-                if (!prompt.isPreset) {
-                    const deleteButton = document.createElement('button');
-                    deleteButton.classList.add('delete-button');
-                    deleteButton.textContent = '删除';
-                    deleteButton.addEventListener('click', () => deletePrompt(prompt.id));
-                    actionsDiv.appendChild(deleteButton);
-                }
+                const deleteButton = document.createElement('button');
+                deleteButton.classList.add('delete-button');
+                deleteButton.textContent = '删除';
+                deleteButton.addEventListener('click', () => deletePrompt(prompt.id));
+                actionsDiv.appendChild(deleteButton);
                 headerDiv.appendChild(actionsDiv);
                 itemDiv.appendChild(headerDiv);
 
@@ -193,8 +120,7 @@
                 prompts.push({
                     id: `custom-${Date.now()}`,
                     name,
-                    content,
-                    isPreset: false
+                    content
                 });
             }
             await savePrompts();

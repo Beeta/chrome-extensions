@@ -189,18 +189,6 @@ h2 {
   opacity: 0.7;
 }
 
-.preset-tag {
-  font-size: 0.75em;
-  background: var(--success-color);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 20px;
-  margin-left: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 .form-container {
   background: var(--card-bg);
   border: 1px solid var(--border-color);

@@ -225,31 +225,9 @@ async function initialize() {
 
 async function loadPromptTemplates() {
     const result = await chrome.storage.local.get(['promptTemplates']);
-    const presets = [
-        { id: 'preset-translate', name: '翻译/Translate', content: '请将以下文本翻译成[目标语言] (Translate to [Language])：\n\n{{text}}', isPreset: true },
-        { id: 'preset-summarize', name: '总结/Summarize', content: '请总结以下文本的主要内容 (Summarize this)：\n\n{{text}}', isPreset: true }
-    ];
-
-    if (result.promptTemplates && result.promptTemplates.length > 0) {
-        promptTemplates = result.promptTemplates;
-        presets.forEach(presetDef => {
-            const existing = promptTemplates.find(p => p.id === presetDef.id);
-            if (!existing) {
-                promptTemplates.unshift({ ...presetDef });
-            } else {
-                existing.isPreset = true;
-            }
-        });
-    } else {
-        promptTemplates = [...presets];
-        await chrome.storage.local.set({ promptTemplates: promptTemplates });
-    }
-    promptTemplates.forEach(p => {
-        if (!presets.some(presetDef => presetDef.id === p.id)) {
-            p.isPreset = false;
-        }
-    });
-
+    promptTemplates = (result.promptTemplates && result.promptTemplates.length > 0)
+        ? result.promptTemplates
+        : [];
     renderPromptShortcuts();
 }
 
@@ -258,8 +236,6 @@ function renderPromptShortcuts() {
     promptShortcutsContainer.innerHTML = '';
 
     const sortedPrompts = [...promptTemplates].sort((a, b) => {
-        if (a.isPreset && !b.isPreset) return -1;
-        if (!a.isPreset && b.isPreset) return 1;
         return a.name.localeCompare(b.name);
     });
 
@@ -280,8 +256,7 @@ function applyPromptTemplate(template) {
         content = content.replace(/{{text}}/g, currentSelectedText);
         clearSelectedTextPreview();
         chatInput.value = content;
-        chatInput.focus();
-        chatInput.scrollTop = chatInput.scrollHeight;
+        handleSendMessage();
     } else if (content.includes("{{text}}")) {
         chatInput.value = '正在提取页面内容...';
         chatInput.disabled = true;
@@ -292,8 +267,7 @@ function applyPromptTemplate(template) {
                 chatInput.value = content;
             }
             chatInput.disabled = false;
-            chatInput.focus();
-            chatInput.scrollTop = chatInput.scrollHeight;
+            handleSendMessage();
         };
         chrome.runtime.sendMessage({ action: "extractActiveTabContent" }, (response) => {
             if (chrome.runtime.lastError || (response && response.success === false)) {
@@ -304,8 +278,7 @@ function applyPromptTemplate(template) {
         });
     } else {
         chatInput.value = content;
-        chatInput.focus();
-        chatInput.scrollTop = chatInput.scrollHeight;
+        handleSendMessage();
     }
 }
 
