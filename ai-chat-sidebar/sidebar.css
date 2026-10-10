@@ -197,14 +197,6 @@ body {
 }
 
 /* ========================================
-   Hidden Controls (kept for JS)
-   ======================================== */
-.controls-primary,
-.controls-secondary {
-  display: none;
-}
-
-/* ========================================
    Chat Area - fills entire page
    ======================================== */
 .chat-area {
@@ -841,10 +833,6 @@ body {
   white-space: nowrap;
   user-select: none;
   font-weight: 400;
-}
-
-#clearAllHistoryButton {
-  display: none;
 }
 
 /* ========================================

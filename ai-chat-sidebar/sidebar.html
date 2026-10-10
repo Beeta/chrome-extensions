@@ -56,18 +56,6 @@
       </button>
     </div>
 
-    <!-- Keep old elements hidden for JS compatibility -->
-    <div class="controls-primary" style="display: none;">
-      <button id="summarizePageButton">总结当前网页</button>
-      <button id="extractContentButton">提取全文作为引用</button>
-      <button id="toggleMoreActionsButton">⚙️</button>
-    </div>
-    <div id="moreActionsMenu" class="controls-secondary" style="display: none;">
-      <button id="splitChatButton">分割当前对话</button>
-      <button id="viewArchivedChatsButton">查看已存档对话</button>
-      <button id="managePromptsButton">管理 Prompt</button>
-    </div>
-
     <!-- History Panel -->
     <div id="historyPanel" class="history-panel" style="display:none;">
       <div class="history-panel-header">
@@ -124,7 +112,6 @@
           </button>
         </div>
       </div>
-      <button id="clearAllHistoryButton" title="清除所有历史" style="display: none;">🗑️</button>
     </div>
   </div>
   <script src="/libs/marked.min.js"></script>

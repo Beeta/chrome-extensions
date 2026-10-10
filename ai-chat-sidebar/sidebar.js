@@ -16,12 +16,10 @@ let isUserScrolling = false;
 let scrollCheckTimeout = null;
 
 // --- DOM 元素获取 ---
-let chatOutput, chatInput, sendMessageButton, summarizePageButton, extractContentButton,
+let chatOutput, chatInput, sendMessageButton,
     selectedTextCard, selectedTextContent, clearSelectedTextButton,
-    clearAllHistoryButton,
-    splitChatButton, viewArchivedChatsButton,
-    managePromptsButton, promptShortcutsContainer,
-    toggleMoreActionsButton, moreActionsMenu;
+    promptShortcutsContainer;
+let inputsDisabled = false;
 
 let pendingPageAttachment = null; // { title, url, tabId }
 let pendingPageExtractCallback = null; // called when extractedPageContent arrives
@@ -45,18 +43,10 @@ async function initialize() {
 
     chatInput = document.getElementById('chatInput');
     sendMessageButton = document.getElementById('sendMessageButton');
-    summarizePageButton = document.getElementById('summarizePageButton');
-    extractContentButton = document.getElementById('extractContentButton');
     selectedTextCard = document.getElementById('selectedTextCard');
     selectedTextContent = document.getElementById('selectedTextContent');
     clearSelectedTextButton = document.getElementById('clearSelectedTextButton');
-    clearAllHistoryButton = document.getElementById('clearAllHistoryButton');
-    splitChatButton = document.getElementById('splitChatButton');
-    viewArchivedChatsButton = document.getElementById('viewArchivedChatsButton');
-    managePromptsButton = document.getElementById('managePromptsButton');
     promptShortcutsContainer = document.getElementById('promptShortcuts');
-    toggleMoreActionsButton = document.getElementById('toggleMoreActionsButton');
-    moreActionsMenu = document.getElementById('moreActionsMenu');
 
 
     if (typeof marked !== 'object' || marked === null || typeof marked.parse !== 'function') {
@@ -120,51 +110,11 @@ async function initialize() {
         });
     }
 
-    if (summarizePageButton) summarizePageButton.addEventListener('click', handleSummarizeCurrentPage);
-    if (extractContentButton) extractContentButton.addEventListener('click', handleExtractContent);
     if (clearSelectedTextButton) clearSelectedTextButton.addEventListener('click', clearSelectedTextPreview);
-    if (clearAllHistoryButton) {
-        clearAllHistoryButton.addEventListener('click', () => {
-            if (confirm("确定要清除所有对话历史吗？此操作无法撤销。")) {
-                allChats = [];
-                currentChat = [];
-                saveChatHistory();
-                renderCurrentChat();
-                addMessageToChat({ role: 'model', parts: [{ text: '所有对话历史已清除。' }], timestamp: Date.now() });
-            }
-        });
-    }
-
-    if (splitChatButton) splitChatButton.addEventListener('click', handleSplitChat);
-    if (viewArchivedChatsButton) {
-        viewArchivedChatsButton.addEventListener('click', () => {
-            chrome.tabs.create({ url: chrome.runtime.getURL('options.html#archive') });
-        });
-    }
-    if (managePromptsButton) {
-        managePromptsButton.addEventListener('click', () => {
-            chrome.tabs.create({ url: chrome.runtime.getURL('options.html#prompts') });
-        });
-    }
 
     const addPromptButton = document.getElementById('addPromptButton');
     if (addPromptButton) {
-        addPromptButton.addEventListener('click', () => {
-            chrome.tabs.create({ url: chrome.runtime.getURL('options.html#prompts') });
-        });
-    }
-
-    // New Toggle Logic
-    if (toggleMoreActionsButton && moreActionsMenu) {
-        toggleMoreActionsButton.addEventListener('click', () => {
-            if (moreActionsMenu.style.display === 'none') {
-                moreActionsMenu.style.display = 'flex';
-                toggleMoreActionsButton.classList.add('active');
-            } else {
-                moreActionsMenu.style.display = 'none';
-                toggleMoreActionsButton.classList.remove('active');
-            }
-        });
+        addPromptButton.addEventListener('click', openPromptsPage);
     }
 
     chrome.storage.onChanged.addListener(async (changes, namespace) => {
@@ -213,7 +163,6 @@ async function initialize() {
             }
             if (changes.geminiArchivedChats) {
                 archivedChats = changes.geminiArchivedChats.newValue || [];
-                updateArchivedChatsButtonCount();
             }
             if (changes.promptTemplates) {
                 await loadPromptTemplates();
@@ -282,13 +231,26 @@ function applyPromptTemplate(template) {
     }
 }
 
-function updateArchivedChatsButtonCount() {
-    if (viewArchivedChatsButton) {
-        viewArchivedChatsButton.textContent = `查看已存档对话 (${archivedChats.length})`;
+function handleClearAllHistory() {
+    if (confirm("确定要清除所有对话历史吗？此操作无法撤销。")) {
+        allChats = [];
+        currentChat = [];
+        saveChatHistory();
+        renderCurrentChat();
+        addMessageToChat({ role: 'model', parts: [{ text: '所有对话历史已清除。' }], timestamp: Date.now() });
     }
 }
 
+function openArchivePage() {
+    chrome.tabs.create({ url: chrome.runtime.getURL('options.html#archive') });
+}
+
+function openPromptsPage() {
+    chrome.tabs.create({ url: chrome.runtime.getURL('options.html#prompts') });
+}
+
 function handleSplitChat() {
+    if (inputsDisabled) return;
     const hasRealMessages = currentChat.some(msg => !msg.isThinking && !msg.isTempStatus && !msg.isDivider);
     if (!hasRealMessages) return;
 
@@ -501,6 +463,7 @@ async function handleSendMessage() {
 }
 
 function handleSummarizeCurrentPage() {
+    if (inputsDisabled) return;
     if (!currentApiKey || !currentModelName || (currentApiType === 'openai' && !currentApiEndpoint)) {
         addMessageToChat({ role: 'model', parts: [{ text: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。' }], timestamp: Date.now() });
         disableInputs();
@@ -575,6 +538,7 @@ function showAttachedPageCard(title, url, favIconUrl, tabId) {
 }
 
 function handleExtractContent() {
+    if (inputsDisabled) return;
     if (!currentApiKey) {
         addMessageToChat({ role: 'model', parts: [{ text: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。' }], timestamp: Date.now() });
         disableInputs();
@@ -594,19 +558,15 @@ function handleExtractContent() {
 
 
 function disableInputs() {
+    inputsDisabled = true;
     if (chatInput) chatInput.disabled = true;
     if (sendMessageButton) sendMessageButton.disabled = true;
-    if (summarizePageButton) summarizePageButton.disabled = true;
-    if (extractContentButton) extractContentButton.disabled = true;
-    if (splitChatButton) splitChatButton.disabled = true;
 }
 
 function enableInputs() {
+    inputsDisabled = false;
     if (chatInput) chatInput.disabled = false;
     if (sendMessageButton) sendMessageButton.disabled = false;
-    if (summarizePageButton) summarizePageButton.disabled = false;
-    if (extractContentButton) extractContentButton.disabled = false;
-    if (splitChatButton) splitChatButton.disabled = false;
 }
 
 async function callApi(userMessageContent, isSummary = false) {
@@ -1118,7 +1078,6 @@ async function loadArchivedChats() {
             } else {
                 archivedChats = [];
             }
-            updateArchivedChatsButtonCount();
             resolve();
         });
     });
@@ -1131,9 +1090,7 @@ function saveArchivedChats() {
             return rest;
         })
     );
-    chrome.storage.local.set({ 'geminiArchivedChats': cleanArchivedChats }, () => {
-        updateArchivedChatsButtonCount();
-    });
+    chrome.storage.local.set({ 'geminiArchivedChats': cleanArchivedChats });
 }
 
 document.addEventListener('DOMContentLoaded', initialize);
@@ -1178,18 +1135,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Menu items -> delegate to existing buttons
+    // Menu items -> call handlers directly
     document.getElementById('menuSummarizePage')?.addEventListener('click', () => {
         closeMenu();
-        document.getElementById('summarizePageButton')?.click();
+        handleSummarizeCurrentPage();
     });
     document.getElementById('menuExtractContent')?.addEventListener('click', () => {
         closeMenu();
-        document.getElementById('extractContentButton')?.click();
+        handleExtractContent();
     });
     document.getElementById('menuSplitChat')?.addEventListener('click', () => {
         closeMenu();
-        document.getElementById('splitChatButton')?.click();
+        handleSplitChat();
     });
     document.getElementById('menuViewHistory')?.addEventListener('click', () => {
         closeMenu();
@@ -1197,15 +1154,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('menuViewArchived')?.addEventListener('click', () => {
         closeMenu();
-        document.getElementById('viewArchivedChatsButton')?.click();
+        openArchivePage();
     });
     document.getElementById('menuManagePrompts')?.addEventListener('click', () => {
         closeMenu();
-        document.getElementById('managePromptsButton')?.click();
+        openPromptsPage();
     });
     document.getElementById('menuClearHistory')?.addEventListener('click', () => {
         closeMenu();
-        document.getElementById('clearAllHistoryButton')?.click();
+        handleClearAllHistory();
     });
     document.getElementById('menuSettings')?.addEventListener('click', () => {
         closeMenu();
@@ -1255,7 +1212,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     summarizeBtn?.addEventListener('click', () => {
         hideContextCard();
-        document.getElementById('summarizePageButton')?.click();
+        handleSummarizeCurrentPage();
     });
 });
 
