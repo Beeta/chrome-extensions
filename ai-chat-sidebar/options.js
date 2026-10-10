@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const statusDiv = document.getElementById('status');
 
   const apiEndpointGroup = document.getElementById('apiEndpointGroup');
+  const toggleApiKeyVisibilityButton = document.getElementById('toggleApiKeyVisibility');
+  const apiKeyHint = document.getElementById('apiKeyHint');
 
   let configurations = [];
   let activeConfigurationId = null;
@@ -32,9 +34,27 @@ document.addEventListener('DOMContentLoaded', function() {
       apiEndpointGroup.classList.add('hidden');
       apiEndpointInput.value = '';
     }
+    updateApiKeyHint();
+  }
+
+  function updateApiKeyHint() {
+    if (!apiKeyHint) return;
+    if (apiTypeSelect.value === 'gemini') {
+      apiKeyHint.innerHTML = '在 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> 免费获取 API 密钥。';
+    } else {
+      apiKeyHint.innerHTML = '在你的服务商控制台获取密钥（如 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI</a>）。';
+    }
   }
 
   apiTypeSelect.addEventListener('change', toggleApiEndpointField);
+
+  if (toggleApiKeyVisibilityButton) {
+    toggleApiKeyVisibilityButton.addEventListener('click', () => {
+      const show = apiKeyInput.type === 'password';
+      apiKeyInput.type = show ? 'text' : 'password';
+      toggleApiKeyVisibilityButton.textContent = show ? '隐藏' : '显示';
+    });
+  }
 
   async function loadConfigurations() {
     const result = await chrome.storage.sync.get(['apiConfigurations', 'activeConfigurationId']);
@@ -81,8 +101,8 @@ document.addEventListener('DOMContentLoaded', function() {
       const detailsDiv = document.createElement('div');
       detailsDiv.classList.add('config-details');
       detailsDiv.innerHTML = `
-        <strong>${escapeHtml(config.configName)}</strong> ${config.id === activeConfigurationId ? '(当前活动)' : ''}<br>
-        <small>类型: ${escapeHtml(config.apiType)} | 模型: ${escapeHtml(config.modelName)}</small>
+        <h3>${escapeHtml(config.configName)}</h3>
+        <p>类型: ${escapeHtml(config.apiType)} · 模型: ${escapeHtml(config.modelName)}</p>
       `;
       itemDiv.appendChild(detailsDiv);
 

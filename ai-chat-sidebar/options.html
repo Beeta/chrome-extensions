@@ -137,6 +137,48 @@
       margin-bottom: 16px;
     }
 
+    .input-with-action {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .input-with-action input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .input-action-btn {
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0 14px;
+      background: var(--hover-bg-color);
+      color: var(--secondary-text-color);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      font-size: 0.82em;
+      cursor: pointer;
+    }
+
+    .input-action-btn:hover {
+      color: var(--primary-text-color);
+    }
+
+    .field-hint {
+      margin-top: 6px;
+      font-size: 0.8em;
+      color: var(--light-text-color);
+    }
+
+    .field-hint a {
+      color: var(--link-color);
+      text-decoration: none;
+    }
+
+    .field-hint a:hover {
+      text-decoration: underline;
+    }
+
     label {
       display: block;
       margin-bottom: 6px;
@@ -912,7 +954,11 @@
           </div>
           <div class="form-group">
             <label for="apiKey">API 密钥:</label>
-            <input type="password" id="apiKey" placeholder="粘贴您的 API 密钥">
+            <div class="input-with-action">
+              <input type="password" id="apiKey" placeholder="粘贴您的 API 密钥">
+              <button type="button" id="toggleApiKeyVisibility" class="input-action-btn" aria-label="显示或隐藏密钥">显示</button>
+            </div>
+            <p class="field-hint" id="apiKeyHint"></p>
           </div>
           <div class="form-group">
             <label for="apiType">API 类型:</label>
