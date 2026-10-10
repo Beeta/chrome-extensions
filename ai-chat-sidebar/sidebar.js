@@ -538,7 +538,7 @@ function renderContextChips() {
     chips.forEach(chip => {
         const el = document.createElement('div');
         el.className = 'context-chip context-chip-' + chip.kind;
-        el.innerHTML = '<span class="context-chip-icon"></span><span class="context-chip-label"></span><button class="context-chip-remove" title="移除">×</button>';
+        el.innerHTML = '<span class="context-chip-icon"></span><span class="context-chip-label"></span><button class="context-chip-remove" title="移除" aria-label="移除此上下文">×</button>';
         el.querySelector('.context-chip-icon').textContent = chip.icon;
         el.querySelector('.context-chip-label').textContent = chip.label;
         el.querySelector('.context-chip-remove').addEventListener('click', () => {
@@ -590,10 +590,12 @@ function setStreamingUI(on) {
     if (on) {
         sendMessageButton.classList.add('is-stop');
         sendMessageButton.title = '停止生成';
+        sendMessageButton.setAttribute('aria-label', '停止生成');
         sendMessageButton.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"></rect></svg>';
     } else {
         sendMessageButton.classList.remove('is-stop');
         sendMessageButton.title = '发送';
+        sendMessageButton.setAttribute('aria-label', '发送');
         sendMessageButton.innerHTML = ICON_SEND;
     }
 }
@@ -1027,6 +1029,10 @@ function renderCurrentChat() {
             copyElement.classList.add('copy-action');
             copyElement.innerHTML = ICON_COPY;
             copyElement.title = '复制';
+            copyElement.setAttribute('role', 'button');
+            copyElement.setAttribute('tabindex', '0');
+            copyElement.setAttribute('aria-label', '复制');
+            copyElement.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copyElement.click(); } };
             copyElement.onclick = (e) => {
                 e.stopPropagation();
                 navigator.clipboard.writeText(textContent).then(() => {
@@ -1046,6 +1052,10 @@ function renderCurrentChat() {
                 archiveElement.classList.add('archive-action');
                 archiveElement.innerHTML = ICON_ARCHIVE;
                 archiveElement.title = '归档';
+                archiveElement.setAttribute('role', 'button');
+                archiveElement.setAttribute('tabindex', '0');
+                archiveElement.setAttribute('aria-label', '归档');
+                archiveElement.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); archiveElement.click(); } };
                 archiveElement.onclick = (e) => {
                     e.stopPropagation();
                     archiveQaPair(index);
