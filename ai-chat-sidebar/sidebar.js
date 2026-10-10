@@ -69,21 +69,16 @@ async function initialize() {
             currentApiType = activeConfig.apiType;
             currentApiEndpoint = activeConfig.apiEndpoint || '';
             currentModelName = activeConfig.modelName;
-
-            if (!currentApiKey || !currentModelName || (currentApiType === 'openai' && !currentApiEndpoint)) {
-                addMessageToChat({ role: 'model', parts: [{ text: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。' }], timestamp: Date.now() });
-                disableInputs();
-            } else {
-                enableInputs();
-            }
+        }
+        // 配置是否可用由 isApiConfigured() 判断；未配置时在空状态里引导，不再往对话里塞红色错误
+        if (isApiConfigured()) {
+            enableInputs();
         } else {
-            addMessageToChat({ role: 'model', parts: [{ text: '错误：未找到任何API配置或未设置活动配置。请<a href="#" id="open-options-link">在插件选项中添加并设置一个活动配置</a>。' }], timestamp: Date.now() });
             disableInputs();
         }
 
     } catch (e) {
         console.error("Sidebar: Error loading API configuration:", e);
-        addMessageToChat({ role: 'model', parts: [{ text: '错误：加载API配置失败。' }], timestamp: Date.now() });
         disableInputs();
     }
 
@@ -141,29 +136,19 @@ async function initialize() {
                     activeConfig = configs[0];
                 }
 
-                let configStatusMessage = 'API 配置已更新。';
                 if (activeConfig) {
                     currentApiKey = activeConfig.apiKey;
                     currentApiType = activeConfig.apiType;
                     currentApiEndpoint = activeConfig.apiEndpoint || '';
                     currentModelName = activeConfig.modelName;
-                    configStatusMessage = `已切换到配置: "${activeConfig.configName}" (${activeConfig.apiType})`;
-
-                    if (!currentApiKey || !currentModelName || (currentApiType === 'openai' && !currentApiEndpoint)) {
-                        addMessageToChat({ role: 'model', parts: [{ text: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。' }], timestamp: Date.now() });
-                        disableInputs();
-                    } else {
-                        enableInputs();
-                    }
                 } else {
                     currentApiKey = null;
                     currentApiType = 'gemini';
                     currentApiEndpoint = '';
                     currentModelName = '';
-                    configStatusMessage = '未找到有效的活动API配置。请在选项中设置。';
-                    disableInputs();
                 }
-                addMessageToChat({ role: 'model', parts: [{ text: configStatusMessage }], timestamp: Date.now() });
+                if (isApiConfigured()) enableInputs(); else disableInputs();
+                renderCurrentChat();
             }
         }
         if (namespace === 'local') {
@@ -908,9 +893,49 @@ function finalizeStreamingMessage(rawText, thinkingText) {
     renderCurrentChat();
 }
 
+function isApiConfigured() {
+    return !!(currentApiKey && currentModelName && (currentApiType !== 'openai' || currentApiEndpoint));
+}
+
+function renderWelcome() {
+    const wrap = document.createElement('div');
+    wrap.className = 'welcome-state';
+    if (!isApiConfigured()) {
+        wrap.innerHTML = `
+            <div class="welcome-icon">⚙️</div>
+            <div class="welcome-title">欢迎使用智能侧边栏</div>
+            <div class="welcome-desc">开始前，先配置一个 AI 服务（Gemini 或 OpenAI 兼容接口）。</div>
+            <button class="welcome-btn" id="welcomeConfigBtn">去配置 API</button>`;
+        chatOutput.appendChild(wrap);
+        wrap.querySelector('#welcomeConfigBtn').addEventListener('click', () => chrome.runtime.openOptionsPage());
+        return;
+    }
+    wrap.innerHTML = `
+        <div class="welcome-icon">💬</div>
+        <div class="welcome-title">有什么可以帮你？</div>
+        <div class="welcome-desc">直接提问，或在网页上划词、点回形针附加当前页作为上下文。</div>
+        <div class="welcome-examples"></div>`;
+    const exWrap = wrap.querySelector('.welcome-examples');
+    ['总结这个页面的要点', '把选中的内容翻译成英文', '这段代码是做什么的？'].forEach(ex => {
+        const b = document.createElement('button');
+        b.className = 'welcome-example';
+        b.textContent = ex;
+        b.addEventListener('click', () => {
+            if (chatInput) { chatInput.value = ex; chatInput.focus(); }
+        });
+        exWrap.appendChild(b);
+    });
+    chatOutput.appendChild(wrap);
+}
+
 function renderCurrentChat() {
     if (!chatOutput) return;
     chatOutput.innerHTML = '';
+    const hasContent = currentChat.some(msg => !msg.isDivider);
+    if (!hasContent) {
+        renderWelcome();
+        return;
+    }
     currentChat.forEach((msg, index) => {
         if (msg.isDivider) {
             const dividerEl = document.createElement('div');
