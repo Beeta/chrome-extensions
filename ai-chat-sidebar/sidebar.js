@@ -16,9 +16,7 @@ let isUserScrolling = false;
 let scrollCheckTimeout = null;
 
 // --- DOM 元素获取 ---
-let chatOutput, chatInput, sendMessageButton,
-    selectedTextCard, selectedTextContent, clearSelectedTextButton,
-    promptShortcutsContainer;
+let chatOutput, chatInput, sendMessageButton, promptShortcutsContainer;
 let inputsDisabled = false;
 
 let pendingPageAttachment = null; // { title, url, tabId }
@@ -43,9 +41,6 @@ async function initialize() {
 
     chatInput = document.getElementById('chatInput');
     sendMessageButton = document.getElementById('sendMessageButton');
-    selectedTextCard = document.getElementById('selectedTextCard');
-    selectedTextContent = document.getElementById('selectedTextContent');
-    clearSelectedTextButton = document.getElementById('clearSelectedTextButton');
     promptShortcutsContainer = document.getElementById('promptShortcuts');
 
 
@@ -110,12 +105,17 @@ async function initialize() {
         });
     }
 
-    if (clearSelectedTextButton) clearSelectedTextButton.addEventListener('click', clearSelectedTextPreview);
-
     const addPromptButton = document.getElementById('addPromptButton');
     if (addPromptButton) {
         addPromptButton.addEventListener('click', openPromptsPage);
     }
+
+    const addContextButton = document.getElementById('addContextButton');
+    if (addContextButton) {
+        addContextButton.addEventListener('click', attachCurrentPage);
+    }
+
+    renderContextChips();
 
     chrome.storage.onChanged.addListener(async (changes, namespace) => {
         if (namespace === 'sync') {
@@ -316,9 +316,7 @@ function handleRuntimeMessages(request, sender, sendResponse) {
     switch (request.type || request.action) {
         case 'TEXT_SELECTED_FOR_SIDEBAR':
             currentSelectedText = request.text;
-            if (selectedTextContent) selectedTextContent.textContent = currentSelectedText.length > 100 ? currentSelectedText.substring(0, 97) + '...' : currentSelectedText;
-            if (selectedTextCard) selectedTextCard.style.display = 'flex';
-            updatePageContextCardPosition();
+            renderContextChips();
             sendResponse({ status: "Selected text received in sidebar" });
             break;
 
@@ -340,11 +338,7 @@ function handleRuntimeMessages(request, sender, sendResponse) {
                 addMessageToChat({ role: 'model', parts: [{ text: `提取失败: ${request.error}${request.warning ? ' (' + request.warning + ')' : ''}` }], timestamp: Date.now() });
             } else {
                 currentSelectedText = request.content;
-                if (selectedTextCard && selectedTextContent) {
-                    selectedTextContent.textContent = `引用内容 (${request.content.length})`;
-                    selectedTextCard.style.display = 'flex';
-                    updatePageContextCardPosition();
-                }
+                renderContextChips();
                 const successMsgText = `✅ 提取成功 (${request.content.length})` + (request.warning ? ` (${request.warning})` : '');
                 const successMsg = addMessageToChat({ role: 'model', parts: [{ text: successMsgText }], timestamp: Date.now(), isTempStatus: true });
                 setTimeout(() => removeMessageByContentCheck(msg => msg.timestamp === successMsg.timestamp), 6000);
@@ -419,7 +413,7 @@ async function handleSendMessage() {
     // If there's a pending page attachment, extract the content first then send
     if (pendingPageAttachment) {
         pendingPageAttachment = null;
-        document.getElementById('attachedPageCard').style.display = 'none';
+        renderContextChips();
 
         const userMsgObj = { role: 'user', parts: [{ text: finalDisplayMessage }], timestamp: Date.now() };
         if (quoteTextForChat) userMsgObj.quoteText = quoteTextForChat;
@@ -513,28 +507,48 @@ function handleSummarizeCurrentPage() {
     });
 }
 
-function showAttachedPageCard(title, url, favIconUrl, tabId) {
-    const card = document.getElementById('attachedPageCard');
-    if (!card) return;
-    pendingPageAttachment = { title, url, tabId };
-    document.getElementById('attachedPageTitle').textContent = title || url;
-    const shortUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    document.getElementById('attachedPageUrl').textContent = shortUrl;
-    const favicon = document.getElementById('attachedPageFavicon');
-    if (favIconUrl) {
-        favicon.src = favIconUrl;
-        favicon.style.display = 'block';
-    } else {
-        favicon.style.display = 'none';
-    }
-    card.style.display = 'flex';
-    updatePageContextCardPosition();
+function attachCurrentPage() {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (!tabs || tabs.length === 0) return;
+        const tab = tabs[0];
+        pendingPageAttachment = { title: tab.title || '', url: tab.url || '', tabId: tab.id };
+        renderContextChips();
+    });
+}
 
-    document.getElementById('attachedPageClose').onclick = () => {
-        card.style.display = 'none';
-        pendingPageAttachment = null;
-        updatePageContextCardPosition();
-    };
+function renderContextChips() {
+    const container = document.getElementById('contextChips');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const chips = [];
+    if (pendingPageAttachment) {
+        chips.push({ kind: 'page', icon: '📄', label: pendingPageAttachment.title || pendingPageAttachment.url || '当前页面' });
+    }
+    if (currentSelectedText) {
+        const preview = currentSelectedText.length > 40 ? currentSelectedText.slice(0, 40) + '…' : currentSelectedText;
+        chips.push({ kind: 'selection', icon: '✂', label: preview });
+    }
+
+    if (chips.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    container.style.display = 'flex';
+
+    chips.forEach(chip => {
+        const el = document.createElement('div');
+        el.className = 'context-chip context-chip-' + chip.kind;
+        el.innerHTML = '<span class="context-chip-icon"></span><span class="context-chip-label"></span><button class="context-chip-remove" title="移除">×</button>';
+        el.querySelector('.context-chip-icon').textContent = chip.icon;
+        el.querySelector('.context-chip-label').textContent = chip.label;
+        el.querySelector('.context-chip-remove').addEventListener('click', () => {
+            if (chip.kind === 'page') pendingPageAttachment = null;
+            else if (chip.kind === 'selection') currentSelectedText = null;
+            renderContextChips();
+        });
+        container.appendChild(el);
+    });
 }
 
 function handleExtractContent() {
@@ -1005,17 +1019,7 @@ function escapeHtml(unsafe) {
 
 function clearSelectedTextPreview() {
     currentSelectedText = null;
-    if (selectedTextCard) selectedTextCard.style.display = 'none';
-    if (selectedTextContent) selectedTextContent.textContent = '';
-    updatePageContextCardPosition();
-}
-
-function updatePageContextCardPosition() {
-    const inputFloat = document.querySelector('.input-float');
-    const pageContextCard = document.getElementById('pageContextCard');
-    if (!inputFloat || !pageContextCard) return;
-    const inputFloatHeight = inputFloat.offsetHeight;
-    pageContextCard.style.bottom = (inputFloatHeight + 24) + 'px';
+    renderContextChips();
 }
 
 function saveChatHistory() {
@@ -1167,52 +1171,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('menuSettings')?.addEventListener('click', () => {
         closeMenu();
         chrome.runtime.openOptionsPage();
-    });
-});
-
-// === Page Context Card Logic ===
-document.addEventListener('DOMContentLoaded', () => {
-    const card = document.getElementById('pageContextCard');
-    const titleEl = document.getElementById('pageContextTitle');
-    const closeBtn = document.getElementById('pageContextClose');
-    const askBtn = document.getElementById('pageContextAsk');
-    const summarizeBtn = document.getElementById('pageContextSummarize');
-    if (!card) return;
-
-    // Get current tab title
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs && tabs.length > 0 && tabs[0].title) {
-            titleEl.textContent = tabs[0].title;
-            card.style.display = 'flex';
-            updatePageContextCardPosition();
-        }
-    });
-
-    function hideContextCard() {
-        card.style.display = 'none';
-        // Reduce chatOutput bottom padding when card is hidden
-        const chatOutput = document.getElementById('chatOutput');
-        if (chatOutput) chatOutput.style.paddingBottom = '130px';
-    }
-
-    closeBtn?.addEventListener('click', hideContextCard);
-
-    askBtn?.addEventListener('click', () => {
-        hideContextCard();
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs && tabs.length > 0) {
-                const tab = tabs[0];
-                showAttachedPageCard(tab.title || '', tab.url || '', tab.favIconUrl || '', tab.id);
-            }
-        });
-        setTimeout(() => {
-            document.getElementById('chatInput')?.focus();
-        }, 50);
-    });
-
-    summarizeBtn?.addEventListener('click', () => {
-        hideContextCard();
-        handleSummarizeCurrentPage();
     });
 });
 
