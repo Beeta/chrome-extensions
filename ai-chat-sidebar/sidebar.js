@@ -21,6 +21,7 @@ let inputsDisabled = false;
 
 let pendingPageAttachment = null; // { title, url, tabId }
 let pendingPageExtractCallback = null; // called when extractedPageContent arrives
+let currentAbortController = null; // active streaming request, for stop-generation
 
 
 // --- 初始化和API Key加载 ---
@@ -94,7 +95,15 @@ async function initialize() {
         renderCurrentChat();
     }
 
-    if (sendMessageButton) sendMessageButton.addEventListener('click', handleSendMessage);
+    if (sendMessageButton) {
+        sendMessageButton.addEventListener('click', () => {
+            if (currentAbortController) {
+                currentAbortController.abort();
+            } else {
+                handleSendMessage();
+            }
+        });
+    }
 
     if (chatInput) {
         chatInput.addEventListener('keydown', (event) => {
@@ -583,6 +592,22 @@ function enableInputs() {
     if (sendMessageButton) sendMessageButton.disabled = false;
 }
 
+// 流式生成期间把发送按钮切换为"停止"态（可点击中断），并锁住输入
+function setStreamingUI(on) {
+    inputsDisabled = on;
+    if (chatInput) chatInput.disabled = on;
+    if (!sendMessageButton) return;
+    if (on) {
+        sendMessageButton.classList.add('is-stop');
+        sendMessageButton.title = '停止生成';
+        sendMessageButton.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"></rect></svg>';
+    } else {
+        sendMessageButton.classList.remove('is-stop');
+        sendMessageButton.title = '发送';
+        sendMessageButton.innerHTML = '<img src="icon/send.png" alt="发送" width="18" height="18">';
+    }
+}
+
 async function callApi(userMessageContent, isSummary = false) {
     if (!currentApiKey || !currentModelName || (currentApiType === 'openai' && !currentApiEndpoint)) {
         addMessageToChat({ role: 'model', parts: [{ text: '错误：当前活动的API配置不完整。请<a href="#" id="open-options-link">检查插件选项</a>。' }], timestamp: Date.now() });
@@ -651,11 +676,14 @@ async function callApi(userMessageContent, isSummary = false) {
     }
 
     // ----- API Call and Streaming Response Handling -----
+    currentAbortController = new AbortController();
+    setStreamingUI(true);
     try {
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            signal: currentAbortController.signal
         });
 
         removeMessageByContentCheck(msg => msg.isThinking && msg.timestamp === thinkingMessage.timestamp);
@@ -783,8 +811,16 @@ async function callApi(userMessageContent, isSummary = false) {
         }
 
     } catch (error) {
-        console.error(`Error calling or streaming from ${currentApiType} API:`, error);
         removeMessageByContentCheck(msg => msg.isThinking && msg.timestamp === thinkingMessage.timestamp);
+        if (error.name === 'AbortError') {
+            // 用户主动停止：保留已生成的部分内容
+            if (streamingMessageElement) {
+                finalizeStreamingMessage();
+                saveCurrentChat();
+            }
+            return;
+        }
+        console.error(`Error calling or streaming from ${currentApiType} API:`, error);
         let friendlyError = '与API通讯时发生错误。';
         if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
             friendlyError = '网络连接失败。请检查您的网络连接并重试。';
@@ -792,6 +828,9 @@ async function callApi(userMessageContent, isSummary = false) {
             friendlyError += ` ${error.message}`;
         }
         addMessageToChat({ role: 'model', parts: [{ text: friendlyError }], timestamp: Date.now() });
+    } finally {
+        setStreamingUI(false);
+        currentAbortController = null;
     }
 }
 

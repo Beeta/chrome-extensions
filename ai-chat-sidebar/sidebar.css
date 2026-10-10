@@ -529,6 +529,18 @@ body {
   cursor: not-allowed;
 }
 
+/* 流式生成时的"停止"态：醒目的深色实心，与常态灰色区分 */
+#sendMessageButton.is-stop {
+  background: var(--primary-text-color);
+  color: var(--card-bg);
+  opacity: 1;
+  cursor: pointer;
+}
+
+#sendMessageButton.is-stop:hover {
+  opacity: 0.85;
+}
+
 .shortcut-hint {
   font-size: 0.75em;
   color: var(--light-text-color);
