@@ -70,7 +70,8 @@
         }
         if (archiveChatInput) {
             archiveChatInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                // 输入法组合中（如中文输入法输入 zhao 后回车上屏）不触发发送
+                if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
                     e.preventDefault();
                     handleSendMessage();
                 }

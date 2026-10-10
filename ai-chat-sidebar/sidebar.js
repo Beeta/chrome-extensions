@@ -108,7 +108,8 @@ async function initialize() {
 
     if (chatInput) {
         chatInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
+            // 输入法组合中（如中文输入法输入 zhao 后回车上屏）不触发发送
+            if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
                 event.preventDefault();
                 sendMessageButton.click();
             }
