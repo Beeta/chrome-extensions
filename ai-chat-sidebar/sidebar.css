@@ -437,8 +437,8 @@ body {
   opacity: 1;
 }
 
-.copy-action img,
-.archive-action img {
+.copy-action svg,
+.archive-action svg {
   display: block;
 }
 
@@ -580,8 +580,8 @@ body {
   width: 32px;
   height: 32px;
   flex-shrink: 0;
-  background: #e8e8e8;
-  color: #5f6368;
+  background: var(--primary-text-color);
+  color: var(--card-bg);
   border: none;
   border-radius: 50%;
   cursor: pointer;
@@ -591,37 +591,18 @@ body {
   padding: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  #sendMessageButton {
-    background: #3c3c3c;
-    color: #9aa0a6;
-  }
-}
-
 #sendMessageButton:hover {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 #sendMessageButton:active {
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 #sendMessageButton:disabled {
   background: #c0c0c0;
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* 流式生成时的"停止"态：醒目的深色实心，与常态灰色区分 */
-#sendMessageButton.is-stop {
-  background: var(--primary-text-color);
-  color: var(--card-bg);
-  opacity: 1;
-  cursor: pointer;
-}
-
-#sendMessageButton.is-stop:hover {
-  opacity: 0.85;
 }
 
 .shortcut-hint {

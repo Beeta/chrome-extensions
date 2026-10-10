@@ -23,6 +23,11 @@ let pendingPageAttachment = null; // { title, url, tabId }
 let pendingPageExtractCallback = null; // called when extractedPageContent arrives
 let currentAbortController = null; // active streaming request, for stop-generation
 
+// 内联图标（随 currentColor 适配深浅色，替代原灰色 PNG）
+const ICON_SEND = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a.993.993 0 0 0-1.388.91L2 9.12c0 .5.374.925.875.985L17 12 2.875 13.9c-.5.06-.875.48-.875.98l-.012 4.61c0 .66.713 1.11 1.4.91z"/></svg>';
+const ICON_COPY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+const ICON_ARCHIVE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>';
+
 
 // --- 初始化和API Key加载 ---
 async function initialize() {
@@ -589,7 +594,7 @@ function setStreamingUI(on) {
     } else {
         sendMessageButton.classList.remove('is-stop');
         sendMessageButton.title = '发送';
-        sendMessageButton.innerHTML = '<img src="icon/send.png" alt="发送" width="18" height="18">';
+        sendMessageButton.innerHTML = ICON_SEND;
     }
 }
 
@@ -1020,14 +1025,14 @@ function renderCurrentChat() {
             // Copy button with icon
             const copyElement = document.createElement('span');
             copyElement.classList.add('copy-action');
-            copyElement.innerHTML = '<img src="icon/copy.png" alt="复制" width="16" height="16">';
+            copyElement.innerHTML = ICON_COPY;
             copyElement.title = '复制';
             copyElement.onclick = (e) => {
                 e.stopPropagation();
                 navigator.clipboard.writeText(textContent).then(() => {
                     copyElement.innerHTML = '✅';
                     setTimeout(() => {
-                        copyElement.innerHTML = '<img src="icon/copy.png" alt="复制" width="16" height="16">';
+                        copyElement.innerHTML = ICON_COPY;
                     }, 1500);
                 }).catch(err => {
                     console.error('Failed to copy text: ', err);
@@ -1039,7 +1044,7 @@ function renderCurrentChat() {
             if (!msg.archived) {
                 const archiveElement = document.createElement('span');
                 archiveElement.classList.add('archive-action');
-                archiveElement.innerHTML = '<img src="icon/box.png" alt="归档" width="16" height="16">';
+                archiveElement.innerHTML = ICON_ARCHIVE;
                 archiveElement.title = '归档';
                 archiveElement.onclick = (e) => {
                     e.stopPropagation();
