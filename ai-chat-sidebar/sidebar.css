@@ -526,8 +526,7 @@ body {
   }
 }
 
-.add-context-btn {
-  margin-right: auto;
+.input-icon-btn {
   width: 28px;
   height: 28px;
   flex-shrink: 0;
@@ -542,7 +541,7 @@ body {
   padding: 0;
 }
 
-.add-context-btn:hover {
+.input-icon-btn:hover {
   background: var(--hover-bg-color);
   color: var(--primary-text-color);
 }
@@ -588,7 +587,6 @@ details:focus-visible {
   display: flex;
   gap: 8px;
   align-items: center;
-  justify-content: flex-end;
   padding-top: 4px;
 }
 
@@ -622,6 +620,7 @@ details:focus-visible {
 }
 
 .shortcut-hint {
+  margin-left: auto;
   font-size: 0.75em;
   color: var(--light-text-color);
   white-space: nowrap;
@@ -811,18 +810,21 @@ details:focus-visible {
    ======================================== */
 .prompt-shortcuts-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   margin-bottom: 4px;
 }
 
 .prompt-shortcuts-scroll {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-content: flex-start;
   gap: 6px;
-  overflow-x: auto;
   flex: 1;
   min-width: 0;
+  max-height: 56px;
+  overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: none;
 }
 

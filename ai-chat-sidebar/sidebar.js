@@ -125,6 +125,11 @@ async function initialize() {
         addContextButton.addEventListener('click', attachCurrentPage);
     }
 
+    const splitChatButton = document.getElementById('splitChatButton');
+    if (splitChatButton) {
+        splitChatButton.addEventListener('click', handleSplitChat);
+    }
+
     renderContextChips();
 
     chrome.storage.onChanged.addListener(async (changes, namespace) => {
@@ -272,10 +277,6 @@ function handleClearAllHistory() {
         renderCurrentChat();
         addMessageToChat({ role: 'model', parts: [{ text: '所有对话历史已清除。' }], timestamp: Date.now() });
     }
-}
-
-function openArchivePage() {
-    chrome.tabs.create({ url: chrome.runtime.getURL('options.html#archive') });
 }
 
 function openPromptsPage() {
@@ -1261,21 +1262,9 @@ document.addEventListener('DOMContentLoaded', () => {
         closeMenu();
         handleExtractContent();
     });
-    document.getElementById('menuSplitChat')?.addEventListener('click', () => {
-        closeMenu();
-        handleSplitChat();
-    });
     document.getElementById('menuViewHistory')?.addEventListener('click', () => {
         closeMenu();
         openHistoryPanel();
-    });
-    document.getElementById('menuViewArchived')?.addEventListener('click', () => {
-        closeMenu();
-        openArchivePage();
-    });
-    document.getElementById('menuManagePrompts')?.addEventListener('click', () => {
-        closeMenu();
-        openPromptsPage();
     });
     document.getElementById('menuClearHistory')?.addEventListener('click', () => {
         closeMenu();

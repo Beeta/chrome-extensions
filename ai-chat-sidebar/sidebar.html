@@ -32,21 +32,9 @@
       </button>
       <div class="menu-divider"></div>
       <div class="menu-section-label">对话</div>
-      <button id="menuSplitChat" class="menu-item">
-        <span class="menu-icon">✂️</span>
-        <span>分割当前对话</span>
-      </button>
       <button id="menuViewHistory" class="menu-item">
         <span class="menu-icon">🕐</span>
         <span>历史对话</span>
-      </button>
-      <button id="menuViewArchived" class="menu-item">
-        <span class="menu-icon">🗂️</span>
-        <span>查看已存档对话</span>
-      </button>
-      <button id="menuManagePrompts" class="menu-item">
-        <span class="menu-icon">⚡</span>
-        <span>管理 Prompt</span>
       </button>
       <div class="menu-divider"></div>
       <button id="menuSettings" class="menu-item">
@@ -82,8 +70,11 @@
         </div>
         <textarea id="chatInput" placeholder="有问题，尽管问"></textarea>
         <div class="send-area-container">
-          <button id="addContextButton" class="add-context-btn" title="添加当前页面为上下文" aria-label="添加当前页面为上下文">
+          <button id="addContextButton" class="input-icon-btn" title="添加当前页面为上下文" aria-label="添加当前页面为上下文">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"></path></svg>
+          </button>
+          <button id="splitChatButton" class="input-icon-btn" title="分割当前对话（开始新一段）" aria-label="分割当前对话">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
           </button>
           <span class="shortcut-hint">Enter 发送 / Shift+Enter 换行</span>
           <button id="sendMessageButton" title="发送" aria-label="发送">
