@@ -3,6 +3,7 @@
 <head>
   <title>智能侧边栏管理</title>
   <meta charset="utf-8">
+  <link rel="stylesheet" href="tokens.css">
   <style>
     * {
       margin: 0;
@@ -10,70 +11,7 @@
       box-sizing: border-box;
     }
 
-    :root {
-      --page-bg: #f3f3f3;
-      --card-bg: #ffffff;
-      --primary-text-color: #1a1a1a;
-      --secondary-text-color: #5f6368;
-      --light-text-color: #9aa0a6;
-      --border-color: #e5e5e5;
-      --hover-bg-color: #ebebeb;
-      --danger-color: #ea4335;
-      --success-color: #34a853;
-      --link-color: #1a73e8;
-      --input-focus-border: #1a73e8;
-      --input-focus-shadow: 0 0 0 2px rgba(26, 115, 232, 0.12);
-      --border-radius: 12px;
-      --border-radius-sm: 8px;
-      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      /* archive css vars */
-      --sidebar-bg: #ffffff;
-      --sidebar-border: #e0e0e0;
-      --main-bg: #f8f9fa;
-      --item-hover: #f5f5f5;
-      --item-active: #ebebeb;
-      --text-primary: #1a1a1a;
-      --text-secondary: #5f6368;
-      --text-light: #9aa0a6;
-      --user-msg-bg: #f1f3f4;
-      --user-msg-text: #1a1a1a;
-      --ai-msg-bg: #ffffff;
-      --ai-msg-text: #1a1a1a;
-      --radius-md: 8px;
-      --radius-lg: 12px;
-      /* prompts css vars */
-      --warning-color: #f9ab00;
-      --code-bg: #f5f5f5;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --page-bg: #141414;
-        --card-bg: #232323;
-        --primary-text-color: #e8eaed;
-        --secondary-text-color: #9aa0a6;
-        --light-text-color: #6b7280;
-        --border-color: #333333;
-        --hover-bg-color: #2a2a2a;
-        --input-focus-border: #8ab4f8;
-        --input-focus-shadow: 0 0 0 2px rgba(138, 180, 248, 0.15);
-        /* archive dark */
-        --sidebar-bg: #232323;
-        --sidebar-border: #3c4043;
-        --main-bg: #1a1a1a;
-        --item-hover: #2d2d2d;
-        --item-active: #3c3c3c;
-        --text-primary: #e8eaed;
-        --text-secondary: #9aa0a6;
-        --text-light: #6b7280;
-        --user-msg-bg: #2d2d2d;
-        --user-msg-text: #e8eaed;
-        --ai-msg-bg: #232323;
-        --ai-msg-text: #e8eaed;
-        /* prompts dark */
-        --code-bg: #2d2d2d;
-      }
-    }
+    /* 设计令牌（颜色 / 圆角 / 字体）统一见 tokens.css（于 <style> 之前通过 <link> 引入） */
 
     /* ===== Tab Layout ===== */
     html, body {

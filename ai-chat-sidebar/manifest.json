@@ -39,6 +39,7 @@
       "resources": [
         "sidebar.html",
         "sidebar.css",
+        "tokens.css",
         "sidebar.js",
         "tab-controller.js",
         "archive.js",

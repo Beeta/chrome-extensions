@@ -1,0 +1,119 @@
+/* tokens.css — 全局设计令牌（颜色 / 圆角 / 字体）的单一事实来源
+ *
+ * 历史上 sidebar 与 options/archive 各维护一套命名几乎重复的变量，
+ * 这里统一到一处，并暂时同时保留两套别名（如 --danger-gradient 与 --danger-color），
+ * 以“零改动使用方”的方式完成去重。命名收口留待 P2 视觉体系阶段。
+ */
+
+:root {
+  /* 基础背景与文本 */
+  --page-bg: #f3f3f3;
+  --card-bg: #ffffff;
+  --primary-text-color: #1a1a1a;
+  --secondary-text-color: #5f6368;
+  --light-text-color: #9aa0a6;
+  --border-color: #e5e5e5;
+  --hover-bg-color: #ebebeb;
+
+  /* 语义色（*-gradient 为历史命名，实为纯色）*/
+  --primary-gradient: #000000;
+  --success-gradient: #34a853;
+  --danger-gradient: #ea4335;
+  --neutral-gradient: #5f6368;
+  --danger-color: #ea4335;
+  --success-color: #34a853;
+  --warning-color: #f9ab00;
+  --link-color: #1a73e8;
+
+  /* 消息气泡 */
+  --user-message-bg: #e4e4e4;
+  --user-message-text: #1a1a1a;
+  --ai-message-text: #1a1a1a;
+
+  /* 控件按钮 */
+  --control-button-bg: #000000;
+  --control-button-text: #ffffff;
+
+  /* 代码 / 引用 / 毛玻璃 */
+  --glass-bg: #ebebeb;
+  --code-block-bg: #e8e8e8;
+  --inline-code-bg: #e8e8e8;
+  --code-bg: #f5f5f5;
+  --preview-bg-color: #fef7e0;
+  --preview-text-color: #856404;
+  --preview-border-color: #f0e0b0;
+  --archived-text-color: #34a853;
+
+  /* options / archive 页专用别名 */
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e0e0e0;
+  --main-bg: #f8f9fa;
+  --item-hover: #f5f5f5;
+  --item-active: #ebebeb;
+  --text-primary: #1a1a1a;
+  --text-secondary: #5f6368;
+  --text-light: #9aa0a6;
+  --user-msg-bg: #f1f3f4;
+  --user-msg-text: #1a1a1a;
+  --ai-msg-bg: #ffffff;
+  --ai-msg-text: #1a1a1a;
+
+  /* 圆角 */
+  --border-radius: 12px;
+  --border-radius-sm: 8px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* 字体 */
+  --font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* 焦点态 */
+  --input-focus-border: #1a73e8;
+  --input-focus-shadow: 0 0 0 2px rgba(26, 115, 232, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #141414;
+    --card-bg: #232323;
+    --primary-text-color: #e8eaed;
+    --secondary-text-color: #9aa0a6;
+    --light-text-color: #6b7280;
+    --border-color: #333333;
+    --hover-bg-color: #2a2a2a;
+
+    --user-message-bg: #2d2d2d;
+    --user-message-text: #e8eaed;
+    --ai-message-text: #e8eaed;
+
+    --control-button-bg: #e8eaed;
+    --control-button-text: #1a1a1a;
+
+    --glass-bg: #1e1e1e;
+    --code-block-bg: #2a2a2a;
+    --inline-code-bg: #2a2a2a;
+    --code-bg: #2d2d2d;
+    --preview-bg-color: #3d3520;
+    --preview-text-color: #ffdf7e;
+    --preview-border-color: #5a4a2a;
+    --archived-text-color: #75b798;
+    --link-color: #8ab4f8;
+
+    --input-focus-border: #8ab4f8;
+    --input-focus-shadow: 0 0 0 2px rgba(138, 180, 248, 0.15);
+
+    --sidebar-bg: #232323;
+    --sidebar-border: #3c4043;
+    --main-bg: #1a1a1a;
+    --item-hover: #2d2d2d;
+    --item-active: #3c3c3c;
+    --text-primary: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --text-light: #6b7280;
+    --user-msg-bg: #2d2d2d;
+    --user-msg-text: #e8eaed;
+    --ai-msg-bg: #232323;
+    --ai-msg-text: #e8eaed;
+  }
+}
