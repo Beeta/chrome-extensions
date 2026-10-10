@@ -120,8 +120,6 @@
       letter-spacing: 0.04em;
     }
 
-    .general-settings,
-    .config-form,
     .config-list {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -339,6 +337,107 @@
 
     .hidden {
       display: none !important;
+    }
+
+    .config-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .config-list-header h2 {
+      margin: 0;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-header,
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 20px;
+    }
+
+    .modal-header {
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.05em;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .modal-close {
+      width: 30px;
+      height: 30px;
+      margin: 0;
+      padding: 0;
+      background: none;
+      color: var(--secondary-text-color);
+      border: none;
+      border-radius: 50%;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      background: var(--hover-bg-color);
+      color: var(--primary-text-color);
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .modal-footer {
+      border-top: 1px solid var(--border-color);
+    }
+
+    .modal-footer-spacer {
+      flex: 1;
+    }
+
+    .modal-footer button {
+      margin: 0;
+    }
+
+    #cancelConfigButton {
+      background: var(--hover-bg-color);
+      color: var(--primary-text-color);
+      border: 1px solid var(--border-color);
+    }
+
+    .modal-status {
+      margin-top: 4px;
+      font-size: 0.85em;
+      min-height: 1.2em;
     }
 
     @media (max-width: 600px) {
@@ -845,7 +944,6 @@
       color: var(--card-bg);
     }
 
-    #clearFormButton,
     #promptClearFormButton {
       background: #5f6368;
       color: white;
@@ -952,50 +1050,64 @@
       <div class="tab-panel" id="panel-settings">
         <h1>API 配置管理</h1>
 
-        <div class="config-form" id="configFormContainer">
-          <h2>添加/编辑配置</h2>
-          <input type="hidden" id="configId">
-          <div class="form-group">
-            <label for="configName">配置名称:</label>
-            <input type="text" id="configName" placeholder="例如：我的 Gemini 主力">
-          </div>
-          <div class="form-group">
-            <label for="apiKey">API 密钥:</label>
-            <div class="input-with-action">
-              <input type="password" id="apiKey" placeholder="粘贴您的 API 密钥">
-              <button type="button" id="toggleApiKeyVisibility" class="input-action-btn" aria-label="显示或隐藏密钥">显示</button>
-            </div>
-            <p class="field-hint" id="apiKeyHint"></p>
-          </div>
-          <div class="form-group">
-            <label for="apiType">API 类型:</label>
-            <select id="apiType">
-              <option value="gemini">Google Gemini</option>
-              <option value="openai">OpenAI 兼容 API</option>
-            </select>
-          </div>
-          <div class="form-group hidden" id="apiEndpointGroup">
-            <label for="apiEndpoint">API Endpoint URL:</label>
-            <input type="url" id="apiEndpoint" placeholder="例如: https://api.openai.com/v1/chat/completions">
-          </div>
-          <div class="form-group">
-            <label for="modelName">模型名称:</label>
-            <input type="text" id="modelName" placeholder="例如: gemini-1.5-flash-latest 或 gpt-4o">
-          </div>
-          <button id="saveConfigButton">保存配置</button>
-          <button type="button" id="testConfigButton">测试连接</button>
-          <button type="button" id="clearFormButton">清空表单</button>
-          <button type="button" id="cancelEditButton" class="hidden">取消编辑</button>
-        </div>
-
         <div class="config-list">
-          <h2>已保存的配置</h2>
+          <div class="config-list-header">
+            <h2>已保存的配置</h2>
+            <button type="button" id="addConfigButton">+ 添加配置</button>
+          </div>
           <div id="configurationsList">
-            <p>暂无配置。请添加一个新配置。</p>
+            <p>暂无配置。点击「添加配置」。</p>
           </div>
         </div>
 
         <p id="status"></p>
+
+        <!-- 新增/编辑配置弹窗 -->
+        <div id="configModalOverlay" class="modal-overlay hidden">
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="configModalTitle">
+            <div class="modal-header">
+              <h2 id="configModalTitle">添加配置</h2>
+              <button type="button" id="configModalClose" class="modal-close" aria-label="关闭">×</button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="configId">
+              <div class="form-group">
+                <label for="configName">配置名称:</label>
+                <input type="text" id="configName" placeholder="例如：我的 Gemini 主力">
+              </div>
+              <div class="form-group">
+                <label for="apiKey">API 密钥:</label>
+                <div class="input-with-action">
+                  <input type="password" id="apiKey" placeholder="粘贴您的 API 密钥">
+                  <button type="button" id="toggleApiKeyVisibility" class="input-action-btn" aria-label="显示或隐藏密钥">显示</button>
+                </div>
+                <p class="field-hint" id="apiKeyHint"></p>
+              </div>
+              <div class="form-group">
+                <label for="apiType">API 类型:</label>
+                <select id="apiType">
+                  <option value="gemini">Google Gemini</option>
+                  <option value="openai">OpenAI 兼容 API</option>
+                </select>
+              </div>
+              <div class="form-group hidden" id="apiEndpointGroup">
+                <label for="apiEndpoint">API Endpoint URL:</label>
+                <input type="url" id="apiEndpoint" placeholder="例如: https://api.openai.com/v1/chat/completions">
+              </div>
+              <div class="form-group">
+                <label for="modelName">模型名称:</label>
+                <input type="text" id="modelName" placeholder="例如: gemini-1.5-flash-latest 或 gpt-4o">
+              </div>
+              <p id="modalStatus" class="modal-status"></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" id="testConfigButton">测试连接</button>
+              <span class="modal-footer-spacer"></span>
+              <button type="button" id="cancelConfigButton">取消</button>
+              <button id="saveConfigButton">保存配置</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ===== 存档面板 ===== -->

@@ -10,8 +10,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const saveConfigButton = document.getElementById('saveConfigButton');
   const testConfigButton = document.getElementById('testConfigButton');
-  const clearFormButton = document.getElementById('clearFormButton');
-  const cancelEditButton = document.getElementById('cancelEditButton');
 
   const configurationsListDiv = document.getElementById('configurationsList');
   const statusDiv = document.getElementById('status');
@@ -19,6 +17,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const apiEndpointGroup = document.getElementById('apiEndpointGroup');
   const toggleApiKeyVisibilityButton = document.getElementById('toggleApiKeyVisibility');
   const apiKeyHint = document.getElementById('apiKeyHint');
+
+  // 弹窗相关
+  const configModalOverlay = document.getElementById('configModalOverlay');
+  const configModalTitle = document.getElementById('configModalTitle');
+  const configModalClose = document.getElementById('configModalClose');
+  const addConfigButton = document.getElementById('addConfigButton');
+  const cancelConfigButton = document.getElementById('cancelConfigButton');
+  const modalStatusDiv = document.getElementById('modalStatus');
 
   let configurations = [];
   let activeConfigurationId = null;
@@ -82,6 +88,29 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!text.includes("...")) {
         setTimeout(() => { statusDiv.textContent = ''; }, 4000);
     }
+  }
+
+  function showModalStatus(text, color) {
+    if (!modalStatusDiv) return;
+    modalStatusDiv.textContent = text;
+    modalStatusDiv.style.color = color;
+  }
+
+  function openConfigModal() {
+    configModalOverlay.classList.remove('hidden');
+  }
+
+  function closeConfigModal() {
+    configModalOverlay.classList.add('hidden');
+    if (modalStatusDiv) modalStatusDiv.textContent = '';
+  }
+
+  function openAddModal() {
+    resetForm();
+    configModalTitle.textContent = '添加配置';
+    saveConfigButton.textContent = '保存配置';
+    openConfigModal();
+    configNameInput.focus();
   }
 
   function renderConfigurations() {
@@ -150,6 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function populateFormForEdit(config) {
+    resetForm();
     configIdInput.value = config.id;
     configNameInput.value = config.configName;
     apiKeyInput.value = config.apiKey;
@@ -158,27 +188,37 @@ document.addEventListener('DOMContentLoaded', function() {
     modelNameInput.value = config.modelName;
     toggleApiEndpointField();
 
+    configModalTitle.textContent = '编辑配置';
     saveConfigButton.textContent = '更新配置';
-    cancelEditButton.classList.remove('hidden');
-    document.getElementById('configFormContainer').scrollIntoView({ behavior: 'smooth' });
+    openConfigModal();
   }
 
-  function clearForm() {
+  function resetForm() {
     configIdInput.value = '';
     configNameInput.value = '';
     apiKeyInput.value = '';
     apiTypeSelect.value = 'gemini';
     apiEndpointInput.value = '';
     modelNameInput.value = '';
+    if (apiKeyInput.type !== 'password') {
+      apiKeyInput.type = 'password';
+      if (toggleApiKeyVisibilityButton) toggleApiKeyVisibilityButton.textContent = '显示';
+    }
     toggleApiEndpointField();
-
-    saveConfigButton.textContent = '保存配置';
-    cancelEditButton.classList.add('hidden');
-    configNameInput.focus();
+    if (modalStatusDiv) modalStatusDiv.textContent = '';
   }
 
-  clearFormButton.addEventListener('click', clearForm);
-  cancelEditButton.addEventListener('click', clearForm);
+  addConfigButton.addEventListener('click', openAddModal);
+  configModalClose.addEventListener('click', closeConfigModal);
+  cancelConfigButton.addEventListener('click', closeConfigModal);
+  configModalOverlay.addEventListener('click', (e) => {
+    if (e.target === configModalOverlay) closeConfigModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !configModalOverlay.classList.contains('hidden')) {
+      closeConfigModal();
+    }
+  });
 
   testConfigButton.addEventListener('click', async () => {
     const apiKey = apiKeyInput.value.trim();
@@ -187,15 +227,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const modelName = modelNameInput.value.trim();
 
     if (!apiKey || !modelName) {
-      showStatus('API密钥和模型名称不能为空。', 'red');
+      showModalStatus('API密钥和模型名称不能为空。', 'red');
       return;
     }
     if (apiType === 'openai' && !apiEndpoint) {
-      showStatus('OpenAI 兼容 API 需要填写 Endpoint URL。', 'red');
+      showModalStatus('OpenAI 兼容 API 需要填写 Endpoint URL。', 'red');
       return;
     }
 
-    showStatus('正在测试连接...', 'blue');
+    showModalStatus('正在测试连接...', 'blue');
 
     try {
         let response;
@@ -225,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (response.ok) {
-            showStatus('连接成功！API 返回正常。', 'green');
+            showModalStatus('连接成功！API 返回正常。', 'green');
         } else {
             const errorText = await response.text();
             let errorMsg = errorText;
@@ -233,10 +273,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const errorJson = JSON.parse(errorText);
                 errorMsg = errorJson.error?.message || errorJson.error || errorText;
             } catch(e) {}
-            showStatus(`连接失败: (${response.status}) ` + errorMsg.substring(0, 100), 'red');
+            showModalStatus(`连接失败: (${response.status}) ` + errorMsg.substring(0, 100), 'red');
         }
     } catch (error) {
-        showStatus('连接失败: ' + error.message, 'red');
+        showModalStatus('连接失败: ' + error.message, 'red');
     }
   });
 
@@ -249,11 +289,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const modelName = modelNameInput.value.trim();
 
     if (!apiKey || !modelName) {
-      showStatus('API密钥和模型名称不能为空。', 'red');
+      showModalStatus('API密钥和模型名称不能为空。', 'red');
       return;
     }
     if (apiType === 'openai' && !apiEndpoint) {
-      showStatus('OpenAI 兼容 API 需要填写 Endpoint URL。', 'red');
+      showModalStatus('OpenAI 兼容 API 需要填写 Endpoint URL。', 'red');
       return;
     }
 
@@ -282,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     await saveConfigurations();
-    clearForm();
+    closeConfigModal();
     loadConfigurations();
   });
 
