@@ -98,6 +98,14 @@ body {
   color: var(--danger-gradient);
 }
 
+.menu-section-label {
+  padding: 8px 14px 2px;
+  font-size: 0.68em;
+  font-weight: 600;
+  color: var(--light-text-color);
+  letter-spacing: 0.04em;
+}
+
 .menu-icon {
   font-size: 1em;
   width: 18px;
