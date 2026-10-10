@@ -11,6 +11,7 @@ let allChats = [];
 let archivedChats = [];
 let currentSelectedText = null;
 let promptTemplates = [];
+let promptDragIndex = null; // 拖拽排序时记录起始位置
 let streamingMessageElement = null;
 let isUserScrolling = false;
 let scrollCheckTimeout = null;
@@ -183,51 +184,84 @@ function renderPromptShortcuts() {
     if (!promptShortcutsContainer) return;
     promptShortcutsContainer.innerHTML = '';
 
-    const sortedPrompts = [...promptTemplates].sort((a, b) => {
-        return a.name.localeCompare(b.name);
-    });
-
-    sortedPrompts.forEach(template => {
+    // 按存储顺序渲染（支持拖拽自定义排序，不再字母序）
+    promptTemplates.forEach((template, index) => {
         const button = document.createElement('button');
         button.classList.add('prompt-shortcut-button');
         button.textContent = template.name;
         button.title = template.content.substring(0, 100) + (template.content.length > 100 ? '...' : '');
+        button.draggable = true;
+        button.dataset.index = index;
         button.addEventListener('click', () => applyPromptTemplate(template));
+        button.addEventListener('dragstart', (e) => {
+            promptDragIndex = index;
+            button.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        button.addEventListener('dragend', () => button.classList.remove('dragging'));
+        button.addEventListener('dragover', (e) => e.preventDefault());
+        button.addEventListener('drop', (e) => {
+            e.preventDefault();
+            reorderPromptTemplates(promptDragIndex, index);
+            promptDragIndex = null;
+        });
         promptShortcutsContainer.appendChild(button);
     });
 }
 
-function applyPromptTemplate(template) {
-    let content = template.content;
+function reorderPromptTemplates(from, to) {
+    if (from === null || from === undefined || from === to) return;
+    const arr = [...promptTemplates];
+    const [moved] = arr.splice(from, 1);
+    arr.splice(to, 0, moved);
+    promptTemplates = arr;
+    chrome.storage.local.set({ promptTemplates });
+    renderPromptShortcuts();
+}
 
-    if (currentSelectedText && content.includes("{{text}}")) {
-        content = content.replace(/{{text}}/g, currentSelectedText);
-        clearSelectedTextPreview();
-        chatInput.value = content;
+function applyPromptTemplate(template) {
+    if (inputsDisabled) return;
+    const content = template.content;
+
+    // 已有选中/引用文本：优先用它（不覆盖用户的主动选择）
+    if (currentSelectedText) {
+        if (content.includes("{{text}}")) {
+            const merged = content.replace(/{{text}}/g, currentSelectedText);
+            clearSelectedTextPreview();
+            chatInput.value = merged;
+        } else {
+            // 不含占位符：选中文本作为引用上下文，气泡只显示指令
+            chatInput.value = content;
+        }
         handleSendMessage();
-    } else if (content.includes("{{text}}")) {
-        chatInput.value = '正在提取页面内容...';
-        chatInput.disabled = true;
-        pendingPageExtractCallback = (pageContent) => {
-            if (pageContent) {
-                chatInput.value = content.replace(/{{text}}/g, pageContent);
-            } else {
-                chatInput.value = content;
-            }
-            chatInput.disabled = false;
-            handleSendMessage();
-        };
-        chrome.runtime.sendMessage({ action: "extractActiveTabContent" }, (response) => {
-            if (chrome.runtime.lastError || (response && response.success === false)) {
-                const cb = pendingPageExtractCallback;
-                pendingPageExtractCallback = null;
-                if (cb) cb(null);
-            }
-        });
-    } else {
-        chatInput.value = content;
-        handleSendMessage();
+        return;
     }
+
+    // 无选中文本：默认提取"当前网页全文"作为上下文
+    chatInput.value = '正在提取页面内容...';
+    chatInput.disabled = true;
+    pendingPageExtractCallback = (pageContent) => {
+        chatInput.disabled = false;
+        if (pageContent && content.includes("{{text}}")) {
+            // 含占位符：全文替换进指令
+            chatInput.value = content.replace(/{{text}}/g, pageContent);
+        } else if (pageContent) {
+            // 不含占位符：全文作为可折叠引用上下文，气泡只显示指令
+            currentSelectedText = pageContent;
+            chatInput.value = content;
+        } else {
+            // 特殊页面(chrome:// / PDF / 商店等)提取失败：退化为只发指令
+            chatInput.value = content;
+        }
+        handleSendMessage();
+    };
+    chrome.runtime.sendMessage({ action: "extractActiveTabContent" }, (response) => {
+        if (chrome.runtime.lastError || (response && response.success === false)) {
+            const cb = pendingPageExtractCallback;
+            pendingPageExtractCallback = null;
+            if (cb) cb(null);
+        }
+    });
 }
 
 function handleClearAllHistory() {

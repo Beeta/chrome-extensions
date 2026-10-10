@@ -855,6 +855,11 @@ details:focus-visible {
   transform: scale(0.95);
 }
 
+.prompt-shortcut-button.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
 .prompt-shortcut-add {
   flex-shrink: 0;
   width: 22px;
