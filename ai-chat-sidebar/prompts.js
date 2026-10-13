@@ -68,6 +68,8 @@
                 const contentPre = document.createElement('pre');
                 contentPre.classList.add('prompt-item-content');
                 contentPre.textContent = prompt.content;
+                contentPre.title = '点击编辑';
+                contentPre.addEventListener('click', () => loadPromptForEditing(prompt.id));
                 itemDiv.appendChild(contentPre);
 
                 promptListDiv.appendChild(itemDiv);
@@ -110,7 +112,8 @@
         }
 
         async function deletePrompt(id) {
-            if (confirm("确定要删除这个模板吗？")) {
+            const ok = await uiConfirm({ message: '确定要删除这个模板吗？', title: '删除模板' });
+            if (ok) {
                 prompts = prompts.filter(p => p.id !== id);
                 await savePrompts();
                 renderPrompts();

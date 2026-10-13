@@ -46,6 +46,7 @@
         "options.html",
         "options.js",
         "prompts.js",
+        "ui-confirm.js",
         "page_content_extractor.js",
         "libs/*",
         "images/*"

@@ -34,8 +34,18 @@
                     currentApiEndpoint = activeConfig.apiEndpoint || '';
                     currentModelName = activeConfig.modelName;
                 }
+                updateConfigBar(activeConfig);
             } catch (e) {
                 console.error("Error loading API configuration:", e);
+            }
+        }
+
+        function updateConfigBar(activeConfig) {
+            if (!archiveConfigBar) return;
+            if (activeConfig) {
+                archiveConfigBar.innerHTML = `当前模型：<strong>${escapeHtml(activeConfig.configName)}</strong> · ${escapeHtml(activeConfig.modelName)}`;
+            } else {
+                archiveConfigBar.innerHTML = `未配置 API，请先到「设置」添加配置`;
             }
         }
 
@@ -47,9 +57,12 @@
         const archiveInputContainer = document.getElementById('archive-input-container');
         const archiveChatInput = document.getElementById('archive-chat-input');
         const archiveSendBtn = document.getElementById('archive-send-btn');
+        const archiveSearchInput = document.getElementById('archive-search');
+        const archiveConfigBar = document.getElementById('archive-config-bar');
+        let archiveSearchTerm = '';
 
         // Detect when user manually scrolls in archive
-        const archiveChatContainer = document.querySelector('#panel-archive .chat-detail-view');
+        const archiveChatContainer = chatDetailContainer;
         if (archiveChatContainer) {
             archiveChatContainer.addEventListener('wheel', () => {
                 isArchiveUserScrolling = true;
@@ -96,33 +109,26 @@
         }
 
         function getChatTitle(chat) {
-            let titleText = "Archive";
             const firstUserMsg = chat.find(msg => msg.role === 'user' && msg.parts && msg.parts[0] && msg.parts[0].text);
             const firstModelMsg = chat.find(msg => msg.role === 'model' && msg.parts && msg.parts[0] && msg.parts[0].text);
-
-            if (chat.length === 2 && firstUserMsg && firstModelMsg) {
-                titleText = `问答: ${firstUserMsg.parts[0].text.substring(0, 30)}...`;
-            } else if (firstUserMsg) {
-                titleText = `对话始于: ${firstUserMsg.parts[0].text.substring(0, 30)}...`;
-            } else if (firstModelMsg) {
-                titleText = `对话始于 (AI): ${firstModelMsg.parts[0].text.substring(0, 30)}...`;
-            } else if (chat[0] && chat[0].parts && chat[0].parts[0] && chat[0].parts[0].text) {
-                titleText = (chat[0].role === 'user' ? "User: " : "AI: ") + chat[0].parts[0].text.substring(0, 30) + "...";
+            const src = firstUserMsg || firstModelMsg || (chat[0] && chat[0].parts && chat[0].parts[0] ? chat[0] : null);
+            if (src && src.parts && src.parts[0] && src.parts[0].text) {
+                const text = src.parts[0].text.trim().replace(/\s+/g, ' ');
+                return text.length > 60 ? text.substring(0, 60) + '…' : text;
             }
-            return titleText;
+            return '(空对话)';
         }
 
         function showListView() {
-            // Show list section, hide detail section
-            const listSection = document.querySelector('.archive-list-section');
-            const detailSection = document.getElementById('archive-detail-section');
-            if (listSection) listSection.style.display = '';
-            if (detailSection) detailSection.style.display = 'none';
+            // 主从布局：详情区清空并隐藏，列表常驻可见
             if (chatDetailContainer) {
                 chatDetailContainer.style.display = 'none';
                 chatDetailContainer.innerHTML = '';
             }
             if (archiveInputContainer) archiveInputContainer.style.display = 'none';
+            if (archiveConfigBar) archiveConfigBar.classList.remove('visible');
+            // 清除列表项高亮
+            archivedChatsListDiv.querySelectorAll('.chat-item.active').forEach(el => el.classList.remove('active'));
             activeChat = null;
         }
 
@@ -141,11 +147,22 @@
                 return tsB - tsA;
             });
 
-            sortedArchivedChats.forEach((chat) => {
+            const term = archiveSearchTerm.trim().toLowerCase();
+            const visibleChats = term
+                ? sortedArchivedChats.filter(chat => getChatTitle(chat).toLowerCase().includes(term))
+                : sortedArchivedChats;
+
+            if (visibleChats.length === 0) {
+                archivedChatsListDiv.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">没有匹配的对话。</div>`;
+                return;
+            }
+
+            visibleChats.forEach((chat) => {
                 if (!chat || chat.length === 0) return;
 
                 const chatItem = document.createElement('div');
                 chatItem.classList.add('chat-item');
+                if (chat === activeChat) chatItem.classList.add('active');
 
                 const titleText = getChatTitle(chat);
 
@@ -153,14 +170,21 @@
                 titleDiv.classList.add('chat-item-title');
                 titleDiv.textContent = titleText;
 
-                const dateDiv = document.createElement('div');
-                dateDiv.classList.add('chat-item-date');
-                dateDiv.textContent = new Date(chat[0]?.timestamp || Date.now()).toLocaleDateString();
+                const metaDiv = document.createElement('div');
+                metaDiv.classList.add('chat-item-meta');
+                const dateSpan = document.createElement('span');
+                dateSpan.textContent = new Date(chat[0]?.timestamp || Date.now()).toLocaleDateString();
+                const countSpan = document.createElement('span');
+                countSpan.textContent = `${chat.length} 条`;
+                metaDiv.appendChild(dateSpan);
+                metaDiv.appendChild(countSpan);
 
                 chatItem.appendChild(titleDiv);
-                chatItem.appendChild(dateDiv);
+                chatItem.appendChild(metaDiv);
 
                 chatItem.addEventListener('click', () => {
+                    archivedChatsListDiv.querySelectorAll('.chat-item.active').forEach(el => el.classList.remove('active'));
+                    chatItem.classList.add('active');
                     renderChatDetails(chat, titleText);
                 });
 
@@ -170,14 +194,17 @@
 
         function renderEmptyState() {
             if (chatDetailContainer) {
+                chatDetailContainer.style.display = 'block';
                 chatDetailContainer.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">💬</div>
-                        <p>请选择一个对话查看详情</p>
+                        <p>请从左侧选择一个对话查看详情</p>
                     </div>
                 `;
             }
             if (archiveInputContainer) archiveInputContainer.style.display = 'none';
+            if (archiveConfigBar) archiveConfigBar.classList.remove('visible');
+            activeChat = null;
         }
 
         // --- API Logic ---
@@ -359,7 +386,7 @@
             renderChatDetails(activeChat, activeChat[0].parts[0].text.substring(0, 20));
 
             // Scroll to bottom
-            const msgContainer = document.querySelector('#panel-archive .chat-detail-view');
+            const msgContainer = chatDetailContainer;
             if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
 
             await callApi(text, activeChat);
@@ -379,7 +406,7 @@
                 contentWrapper.innerHTML = html;
 
                 // Auto-scroll if user hasn't manually scrolled
-                const msgContainer = document.querySelector('#panel-archive .chat-detail-view');
+                const msgContainer = chatDetailContainer;
                 if (!isArchiveUserScrolling && msgContainer) {
                     msgContainer.scrollTop = msgContainer.scrollHeight;
                 }
@@ -423,28 +450,15 @@
         function renderChatDetails(chat, titleText) {
             activeChat = chat; // Set active chat
 
-            // Switch to detail view: hide list section, show detail section
-            const listSection = document.querySelector('.archive-list-section');
-            const detailSection = document.getElementById('archive-detail-section');
-            if (listSection) listSection.style.display = 'none';
-            if (detailSection) detailSection.style.display = 'flex';
+            // 主从布局：仅切换右侧详情内容，列表常驻
             if (chatDetailContainer) {
                 chatDetailContainer.style.display = 'block';
                 chatDetailContainer.innerHTML = '';
             }
+            if (archiveConfigBar) archiveConfigBar.classList.add('visible');
 
             // Show input container
             if (archiveInputContainer) archiveInputContainer.style.display = 'block';
-
-            // Back button (返回列表)
-            const backBtn = document.createElement('button');
-            backBtn.textContent = '← 返回列表';
-            backBtn.classList.add('action-btn', 'back-to-list-btn');
-            backBtn.style.marginBottom = '12px';
-            backBtn.onclick = () => {
-                showListView();
-            };
-            chatDetailContainer.appendChild(backBtn);
 
             const headerDiv = document.createElement('div');
             headerDiv.classList.add('chat-header');
@@ -459,8 +473,12 @@
             deleteBtn.style.color = '#ef4444';
             deleteBtn.style.borderColor = '#ef4444';
 
-            deleteBtn.onclick = () => {
-                if (confirm(`确定要从存档中删除这个对话 ("${titleText}") 吗？此操作无法撤销。`)) {
+            deleteBtn.onclick = async () => {
+                const ok = await uiConfirm({
+                    message: `确定要从存档中删除这个对话吗？此操作无法撤销。`,
+                    title: '删除对话'
+                });
+                if (ok) {
                     const originalIndex = archivedChats.findIndex(originalChat => originalChat === chat);
                     if (originalIndex !== -1) {
                         archivedChats.splice(originalIndex, 1);
@@ -560,6 +578,7 @@
                     archivedChats = [];
                 }
                 renderArchivedChatsList();
+                renderEmptyState();
             });
         }
 
@@ -568,8 +587,13 @@
         }
 
         if (clearAllArchivedButton) {
-            clearAllArchivedButton.addEventListener('click', () => {
-                if (confirm("确定要永久删除所有已存档的对话吗？此操作无法撤销。")) {
+            clearAllArchivedButton.addEventListener('click', async () => {
+                const ok = await uiConfirm({
+                    message: '确定要永久删除所有已存档的对话吗？此操作无法撤销。',
+                    title: '清空所有存档',
+                    okText: '全部删除'
+                });
+                if (ok) {
                     archivedChats = [];
                     saveArchivedChats();
                     renderArchivedChatsList();
@@ -587,6 +611,13 @@
                 }
             }
         });
+
+        if (archiveSearchInput) {
+            archiveSearchInput.addEventListener('input', () => {
+                archiveSearchTerm = archiveSearchInput.value;
+                renderArchivedChatsList();
+            });
+        }
 
         loadArchivedChats();
     }

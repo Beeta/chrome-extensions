@@ -139,30 +139,40 @@ document.addEventListener('DOMContentLoaded', function() {
       actionsDiv.classList.add('config-actions');
 
       const setActiveButton = document.createElement('button');
-      setActiveButton.textContent = '设为活动';
       setActiveButton.classList.add('set-active-btn');
       if (config.id === activeConfigurationId) {
+        setActiveButton.textContent = '当前使用中';
         setActiveButton.disabled = true;
         setActiveButton.style.opacity = 0.5;
+      } else {
+        setActiveButton.textContent = '设为活动';
+        setActiveButton.addEventListener('click', async () => {
+          activeConfigurationId = config.id;
+          await saveConfigurations();
+          renderConfigurations();
+        });
       }
-      setActiveButton.addEventListener('click', async () => {
-        activeConfigurationId = config.id;
-        await saveConfigurations();
-        renderConfigurations();
-      });
       actionsDiv.appendChild(setActiveButton);
 
       const editButton = document.createElement('button');
-      editButton.textContent = '编辑';
-      editButton.classList.add('edit-btn');
+      editButton.classList.add('icon-btn');
+      editButton.title = '编辑';
+      editButton.setAttribute('aria-label', '编辑');
+      editButton.textContent = '✏️';
       editButton.addEventListener('click', () => populateFormForEdit(config));
       actionsDiv.appendChild(editButton);
 
       const deleteButton = document.createElement('button');
-      deleteButton.textContent = '删除';
-      deleteButton.classList.add('delete-btn');
+      deleteButton.classList.add('icon-btn');
+      deleteButton.title = '删除';
+      deleteButton.setAttribute('aria-label', '删除');
+      deleteButton.textContent = '🗑️';
       deleteButton.addEventListener('click', async () => {
-        if (confirm(`确定要删除配置 "${escapeHtml(config.configName)}" 吗？`)) {
+        const ok = await uiConfirm({
+          message: `确定要删除配置 "${config.configName}" 吗？`,
+          title: '删除配置'
+        });
+        if (ok) {
           configurations = configurations.filter(c => c.id !== config.id);
           if (activeConfigurationId === config.id) {
             activeConfigurationId = configurations.length > 0 ? configurations[0].id : null;
