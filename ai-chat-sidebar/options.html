@@ -1150,24 +1150,12 @@
         <div class="prompts-container">
           <h1>管理 Prompt 模板</h1>
 
-          <div id="promptList" class="prompt-list"></div>
-
-          <h2>添加/编辑模板</h2>
-          <div class="form-container">
-            <input type="hidden" id="promptId">
-            <div>
-              <label for="promptName">模板名称:</label>
-              <input type="text" id="promptName" placeholder="例如：翻译成英文">
-            </div>
-            <div>
-              <label for="promptContent">模板内容 (使用 <code>{{text}}</code> 作为选中文本的占位符):</label>
-              <textarea id="promptContent" rows="5" placeholder="例如：请将以下文本翻译成英文：&#10;&#10;{{text}}"></textarea>
-            </div>
-            <div class="form-actions">
-              <button id="savePromptButton">保存模板</button>
-              <button id="promptClearFormButton" type="button">清空表单</button>
-            </div>
+          <div class="config-list-header">
+            <h2>已保存的模板</h2>
+            <button type="button" id="addPromptEntryButton">+ 添加模板</button>
           </div>
+
+          <div id="promptList" class="prompt-list"></div>
 
           <p class="usage-note">
             <strong>使用说明:</strong> 在模板内容中使用 <code>{{text}}</code> 作为占位符。当您在侧边栏点击模板快捷方式时：
@@ -1176,6 +1164,32 @@
               <li>如果没有选中的文本，<code>{{text}}</code> 将被原样保留或根据您的输入进行处理。</li>
             </ul>
           </p>
+
+          <!-- 新增/编辑模板弹窗 -->
+          <div id="promptModalOverlay" class="modal-overlay hidden">
+            <div class="modal" role="dialog" aria-modal="true" aria-labelledby="promptModalTitle">
+              <div class="modal-header">
+                <h2 id="promptModalTitle">添加模板</h2>
+                <button type="button" id="promptModalClose" class="modal-close" aria-label="关闭">×</button>
+              </div>
+              <div class="modal-body">
+                <input type="hidden" id="promptId">
+                <div class="form-group">
+                  <label for="promptName">模板名称:</label>
+                  <input type="text" id="promptName" placeholder="例如：翻译成英文">
+                </div>
+                <div class="form-group">
+                  <label for="promptContent">模板内容 (使用 <code>{{text}}</code> 作为选中文本的占位符):</label>
+                  <textarea id="promptContent" rows="6" placeholder="例如：请将以下文本翻译成英文：&#10;&#10;{{text}}"></textarea>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <span class="modal-footer-spacer"></span>
+                <button type="button" id="promptClearFormButton">取消</button>
+                <button id="savePromptButton">保存模板</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

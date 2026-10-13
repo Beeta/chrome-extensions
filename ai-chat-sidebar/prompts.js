@@ -9,8 +9,11 @@
         const promptContentInput = document.getElementById('promptContent');
         const savePromptButton = document.getElementById('savePromptButton');
         const clearFormButton = document.getElementById('promptClearFormButton');
-        // backToSidebarButton is not present in the merged page, skip it gracefully
-        const backToSidebarButton = document.getElementById('backToSidebarButton');
+        const addPromptEntryButton = document.getElementById('addPromptEntryButton');
+        // 弹窗相关
+        const promptModalOverlay = document.getElementById('promptModalOverlay');
+        const promptModalTitle = document.getElementById('promptModalTitle');
+        const promptModalClose = document.getElementById('promptModalClose');
 
         let prompts = [];
 
@@ -71,10 +74,25 @@
             });
         }
 
-        function clearForm() {
+        function openPromptModal() {
+            promptModalOverlay.classList.remove('hidden');
+        }
+
+        function closePromptModal() {
+            promptModalOverlay.classList.add('hidden');
+        }
+
+        function resetForm() {
             promptIdInput.value = '';
             promptNameInput.value = '';
             promptContentInput.value = '';
+        }
+
+        function openAddModal() {
+            resetForm();
+            promptModalTitle.textContent = '添加模板';
+            savePromptButton.textContent = '保存模板';
+            openPromptModal();
             promptNameInput.focus();
         }
 
@@ -84,9 +102,9 @@
                 promptIdInput.value = prompt.id;
                 promptNameInput.value = prompt.name;
                 promptContentInput.value = prompt.content;
-                // Scroll the panel content instead of window
-                const panel = document.getElementById('panel-prompts');
-                if (panel) panel.scrollTo({ top: panel.scrollHeight, behavior: 'smooth' });
+                promptModalTitle.textContent = '编辑模板';
+                savePromptButton.textContent = '更新模板';
+                openPromptModal();
                 promptNameInput.focus();
             }
         }
@@ -96,7 +114,6 @@
                 prompts = prompts.filter(p => p.id !== id);
                 await savePrompts();
                 renderPrompts();
-                clearForm();
             }
         }
 
@@ -125,23 +142,20 @@
             }
             await savePrompts();
             renderPrompts();
-            clearForm();
+            closePromptModal();
         });
 
-        clearFormButton.addEventListener('click', clearForm);
-
-        // backToSidebarButton is not present in the merged options page, skip gracefully
-        if (backToSidebarButton) {
-            backToSidebarButton.addEventListener('click', () => {
-                chrome.tabs.getCurrent(tab => {
-                    if (tab && tab.id) {
-                        chrome.tabs.remove(tab.id);
-                    } else {
-                        window.close();
-                    }
-                });
-            });
-        }
+        addPromptEntryButton.addEventListener('click', openAddModal);
+        clearFormButton.addEventListener('click', closePromptModal);
+        promptModalClose.addEventListener('click', closePromptModal);
+        promptModalOverlay.addEventListener('click', (e) => {
+            if (e.target === promptModalOverlay) closePromptModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !promptModalOverlay.classList.contains('hidden')) {
+                closePromptModal();
+            }
+        });
 
         loadPrompts();
     }
