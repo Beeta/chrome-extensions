@@ -373,18 +373,30 @@ body {
   padding-bottom: 4px;
 }
 
-/* 长用户消息折叠后的“展开全文 / 收起”按钮 */
+/* 长用户消息：折叠时裁切可见高度，底部渐隐提示“还有更多” */
+.message.user .long-message-clip {
+  position: relative;
+  overflow: hidden;
+}
+
+.message.user .long-message-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 48px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--user-message-bg));
+}
+
+/* “展开全文 / 收起”：低调的文字链接，不抢视觉权重 */
 .message.user .long-message-toggle {
   display: inline-block;
-  margin-top: 8px;
-  padding: 2px 0;
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
+  margin-top: 6px;
   font-size: 0.85em;
-  opacity: 0.75;
+  opacity: 0.7;
   cursor: pointer;
+  user-select: none;
 }
 
 .message.user .long-message-toggle:hover {

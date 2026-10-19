@@ -26,8 +26,8 @@ let currentAbortController = null; // active streaming request, for stop-generat
 
 // 超过该字符数的用户消息默认折叠展示
 const LONG_MESSAGE_THRESHOLD = 600;
-// 折叠时保留的字符数
-const LONG_MESSAGE_PREVIEW_LENGTH = 300;
+// 折叠时可见区域的最大高度（像素）；超出部分以渐隐遮罩收尾
+const LONG_MESSAGE_COLLAPSED_HEIGHT = 200;
 
 // 内联图标（随 currentColor 适配深浅色，替代原灰色 PNG）
 const ICON_SEND = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a.993.993 0 0 0-1.388.91L2 9.12c0 .5.374.925.875.985L17 12 2.875 13.9c-.5.06-.875.48-.875.98l-.012 4.61c0 .66.713 1.11 1.4.91z"/></svg>';
@@ -1015,12 +1015,9 @@ function renderCurrentChat() {
         const textContent = (msg.parts && msg.parts[0] && typeof msg.parts[0].text === 'string') ? msg.parts[0].text : "";
         const thinkingContent = msg.thinkingText || "";
 
-        // 长用户消息默认折叠，只渲染摘要，展开时再渲染全文
+        // 长用户消息默认折叠：全文照常渲染，靠 CSS 裁切出可见高度，末尾渐隐
         const collapsibleUserMsg = msg.role === 'user' && !msg.isTempStatus && !msg.isThinking && textContent.length > LONG_MESSAGE_THRESHOLD;
         const collapsed = collapsibleUserMsg && msg._longCollapsed;
-        const displayText = collapsed
-            ? textContent.substring(0, LONG_MESSAGE_PREVIEW_LENGTH).replace(/\s+$/, '')
-            : textContent;
 
         if (msg.role === 'model' && typeof marked !== 'undefined' && typeof marked.parse === 'function' && !msg.isTempStatus && !msg.isThinking) {
             // Render thinking block if present
@@ -1041,16 +1038,15 @@ function renderCurrentChat() {
                 contentHtml += escapeHtml(textContent).replace(/\n/g, '<br>');
             }
         } else {
-            contentHtml = escapeHtml(displayText).replace(/\n/g, '<br>');
+            contentHtml = escapeHtml(textContent).replace(/\n/g, '<br>');
         }
 
-        // 折叠态追加“展开全文”按钮
+        // 长消息：折叠时用裁切容器包住全文，展开时去掉容器限制
         if (collapsibleUserMsg) {
-            const total = textContent.length;
-            const label = collapsed
-                ? `展开全文（共 ${total} 字）`
-                : '收起';
-            contentHtml += `<button type="button" class="long-message-toggle">${escapeHtml(label)}</button>`;
+            if (collapsed) {
+                contentHtml = `<div class="long-message-clip" style="max-height:${LONG_MESSAGE_COLLAPSED_HEIGHT}px">${contentHtml}<div class="long-message-fade"></div></div>`;
+            }
+            contentHtml += `<span class="long-message-toggle" role="button" tabindex="0">${collapsed ? '展开全文（共 ' + textContent.length + ' 字）' : '收起'}</span>`;
         }
 
         // If user message has a quote, render it as a quote card above the message text
@@ -1077,7 +1073,7 @@ function renderCurrentChat() {
 
         const longMsgToggle = contentWrapper.querySelector('.long-message-toggle');
         if (longMsgToggle) {
-            longMsgToggle.addEventListener('click', (e) => {
+            const onToggle = (e) => {
                 e.stopPropagation();
                 // 状态记在消息对象上，只用于本次会话；重新渲染时保留展开/折叠选择
                 msg._longCollapsed = !collapsed;
@@ -1087,6 +1083,10 @@ function renderCurrentChat() {
                 if (target && msg._longCollapsed === false) {
                     target.scrollIntoView({ block: 'start', behavior: 'auto' });
                 }
+            };
+            longMsgToggle.addEventListener('click', onToggle);
+            longMsgToggle.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(e); }
             });
         }
 
