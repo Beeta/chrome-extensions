@@ -24,6 +24,11 @@ let pendingPageAttachment = null; // { title, url, tabId }
 let pendingPageExtractCallback = null; // called when extractedPageContent arrives
 let currentAbortController = null; // active streaming request, for stop-generation
 
+// 超过该字符数的用户消息默认折叠展示
+const LONG_MESSAGE_THRESHOLD = 600;
+// 折叠时保留的字符数
+const LONG_MESSAGE_PREVIEW_LENGTH = 300;
+
 // 内联图标（随 currentColor 适配深浅色，替代原灰色 PNG）
 const ICON_SEND = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a.993.993 0 0 0-1.388.91L2 9.12c0 .5.374.925.875.985L17 12 2.875 13.9c-.5.06-.875.48-.875.98l-.012 4.61c0 .66.713 1.11 1.4.91z"/></svg>';
 const ICON_COPY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
@@ -881,6 +886,11 @@ function addMessageToChat(message) {
     }
 
     const messageWithTimestamp = { ...message, timestamp: message.timestamp || Date.now() };
+    // 超长用户消息默认折叠
+    const firstText = messageWithTimestamp.parts && messageWithTimestamp.parts[0] && messageWithTimestamp.parts[0].text;
+    if (messageWithTimestamp.role === 'user' && typeof firstText === 'string' && firstText.length > LONG_MESSAGE_THRESHOLD) {
+        messageWithTimestamp._longCollapsed = true;
+    }
     currentChat.push(messageWithTimestamp);
     renderCurrentChat();
     if (!message.isTempStatus && !message.isThinking) {
@@ -999,10 +1009,18 @@ function renderCurrentChat() {
         messageDiv.classList.add('message', msg.role === 'user' ? 'user' : 'ai');
         if (msg.isTempStatus) messageDiv.classList.add('temporary-status');
         if (msg.isThinking) messageDiv.classList.add('thinking-status');
+        messageDiv.dataset.msgIndex = index;
 
         let contentHtml = '';
         const textContent = (msg.parts && msg.parts[0] && typeof msg.parts[0].text === 'string') ? msg.parts[0].text : "";
         const thinkingContent = msg.thinkingText || "";
+
+        // 长用户消息默认折叠，只渲染摘要，展开时再渲染全文
+        const collapsibleUserMsg = msg.role === 'user' && !msg.isTempStatus && !msg.isThinking && textContent.length > LONG_MESSAGE_THRESHOLD;
+        const collapsed = collapsibleUserMsg && msg._longCollapsed;
+        const displayText = collapsed
+            ? textContent.substring(0, LONG_MESSAGE_PREVIEW_LENGTH).replace(/\s+$/, '')
+            : textContent;
 
         if (msg.role === 'model' && typeof marked !== 'undefined' && typeof marked.parse === 'function' && !msg.isTempStatus && !msg.isThinking) {
             // Render thinking block if present
@@ -1023,7 +1041,16 @@ function renderCurrentChat() {
                 contentHtml += escapeHtml(textContent).replace(/\n/g, '<br>');
             }
         } else {
-            contentHtml = escapeHtml(textContent).replace(/\n/g, '<br>');
+            contentHtml = escapeHtml(displayText).replace(/\n/g, '<br>');
+        }
+
+        // 折叠态追加“展开全文”按钮
+        if (collapsibleUserMsg) {
+            const total = textContent.length;
+            const label = collapsed
+                ? `展开全文（共 ${total} 字）`
+                : '收起';
+            contentHtml += `<button type="button" class="long-message-toggle">${escapeHtml(label)}</button>`;
         }
 
         // If user message has a quote, render it as a quote card above the message text
@@ -1045,6 +1072,21 @@ function renderCurrentChat() {
             optionsLink.addEventListener('click', (e) => {
                 e.preventDefault();
                 chrome.runtime.openOptionsPage();
+            });
+        }
+
+        const longMsgToggle = contentWrapper.querySelector('.long-message-toggle');
+        if (longMsgToggle) {
+            longMsgToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // 状态记在消息对象上，只用于本次会话；重新渲染时保留展开/折叠选择
+                msg._longCollapsed = !collapsed;
+                renderCurrentChat();
+                // 展开后把该消息滚动到可视区顶部附近，避免用户丢失位置
+                const target = chatOutput.querySelector(`.message[data-msg-index="${index}"]`);
+                if (target && msg._longCollapsed === false) {
+                    target.scrollIntoView({ block: 'start', behavior: 'auto' });
+                }
             });
         }
 
@@ -1138,8 +1180,14 @@ function clearSelectedTextPreview() {
 }
 
 function saveChatHistory() {
+    // 剥掉仅用于界面状态的下划线字段（如 _longCollapsed），避免污染存储与 API 请求
+    const stripUiState = (msg) => {
+        const clean = { ...msg };
+        Object.keys(clean).forEach(k => { if (k.startsWith('_')) delete clean[k]; });
+        return clean;
+    };
     const cleanAllChats = allChats.map(chat =>
-        chat.filter(msg => !msg.isTempStatus && !msg.isThinking)
+        chat.filter(msg => !msg.isTempStatus && !msg.isThinking).map(stripUiState)
     ).filter(chat => chat.length > 0);
     chrome.storage.local.set({ 'geminiChatHistory': cleanAllChats });
 }

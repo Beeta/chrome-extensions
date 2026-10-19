@@ -50,7 +50,9 @@ libs/marked.min.js     # Markdown 渲染（第三方）
 
 ## 关键约定
 
-**翻译机制**：每个 JS 文件都维护自己的 `translations` 对象（`zh`/`en`）和 `t(key)` 函数，互不共享。新增文案必须在 `zh` 和 `en` 两个对象中同时添加。
+**翻译机制**：当前版本实际未实现国际化，界面文案直接写中文（旧版的多语言 `translations` 对象已不存在）。若要恢复多语言，需先补齐机制再改文案。
+
+**版本号真源**：`manifest.json` 的 `version`；变更记录写在 `CHANGELOG.md`。
 
 **流式响应**：sidebar.js 和 archive.js 均使用 `streamingMessageElement` 跟踪当前正在流式输出的 DOM 元素。流式结束时需调用 `finalizeStreamingMessage()` 处理 Markdown 渲染和操作按钮显示。
 
